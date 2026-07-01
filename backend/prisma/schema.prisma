@@ -1,0 +1,504 @@
+// ============================================================
+// PRISMA SCHEMA — Application de Gestion de Restaurant
+// Stack: PostgreSQL · Prisma ORM
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  SERVED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  ONLINE
+  MIXED
+}
+
+enum CashMovementType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// ============================================================
+// UTILISATEURS & RBAC
+// ============================================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roles         UserRole[]
+  orders        Order[]
+  cashRegisters CashRegister[]
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(uuid())
+  action   String // create, read, update, delete
+  resource String // orders, stock, menu, users, reports, ...
+
+  roles RolePermission[]
+
+  @@unique([action, resource])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// STOCK
+// ============================================================
+
+model StockCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@map("stock_categories")
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockEntries StockEntry[]
+
+  @@index([name])
+  @@map("suppliers")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  name           String
+  code           String    @unique
+  unit           String    // kg, L, pièce, etc.
+  currentQty     Decimal   @default(0) @db.Decimal(10, 3)
+  minQty         Decimal   @default(0) @db.Decimal(10, 3)
+  alertQty       Decimal   @default(0) @db.Decimal(10, 3)
+  costPrice      Decimal   @default(0) @db.Decimal(10, 2)
+  fabricationDate DateTime?
+  expirationDate DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  categoryId String
+  category   StockCategory @relation(fields: [categoryId], references: [id])
+
+  stockEntryItems  StockEntryItem[]
+  stockOutputItems StockOutputItem[]
+
+  @@index([code])
+  @@index([categoryId])
+  @@index([currentQty])
+  @@map("products")
+}
+
+model StockEntry {
+  id         String   @id @default(uuid())
+  reference  String   @unique
+  notes      String?
+  entryDate  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  items StockEntryItem[]
+
+  @@index([supplierId])
+  @@index([entryDate])
+  @@map("stock_entries")
+}
+
+model StockEntryItem {
+  id        String  @id @default(uuid())
+  quantity  Decimal @db.Decimal(10, 3)
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  entryId   String
+  productId String
+
+  entry   StockEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  product Product    @relation(fields: [productId], references: [id])
+
+  @@index([entryId])
+  @@index([productId])
+  @@map("stock_entry_items")
+}
+
+model StockOutput {
+  id         String   @id @default(uuid())
+  reason     String
+  notes      String?
+  outputDate DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  items StockOutputItem[]
+
+  @@index([outputDate])
+  @@map("stock_outputs")
+}
+
+model StockOutputItem {
+  id       String  @id @default(uuid())
+  quantity Decimal @db.Decimal(10, 3)
+
+  outputId  String
+  productId String
+
+  output  StockOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+
+  @@index([outputId])
+  @@index([productId])
+  @@map("stock_output_items")
+}
+
+// ============================================================
+// MENU
+// ============================================================
+
+model MenuCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  items MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  available   Boolean  @default(true)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([available])
+  @@map("menu_items")
+}
+
+// ============================================================
+// TABLES & ZONES
+// ============================================================
+
+model Zone {
+  id        String   @id @default(uuid())
+  name      String   @unique // Salle, Terrasse, Cafétéria
+  createdAt DateTime @default(now())
+
+  tables RestaurantTable[]
+
+  @@map("zones")
+}
+
+model RestaurantTable {
+  id        String      @id @default(uuid())
+  name      String
+  capacity  Int         @default(4)
+  status    TableStatus @default(FREE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  zoneId String
+  zone   Zone   @relation(fields: [zoneId], references: [id])
+
+  orders       Order[]
+  reservations Reservation[]
+
+  @@index([zoneId])
+  @@index([status])
+  @@map("restaurant_tables")
+}
+
+// ============================================================
+// RÉSERVATIONS
+// ============================================================
+
+model Reservation {
+  id          String            @id @default(uuid())
+  clientName  String
+  phone       String?
+  dateTime    DateTime
+  guestCount  Int
+  durationMin Int               @default(60)
+  notes       String?
+  status      ReservationStatus @default(CONFIRMED)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tableId String
+  table   RestaurantTable @relation(fields: [tableId], references: [id])
+
+  @@index([tableId])
+  @@index([dateTime])
+  @@map("reservations")
+}
+
+// ============================================================
+// COMMANDES
+// ============================================================
+
+model Order {
+  id        String      @id @default(uuid())
+  type      OrderType   @default(DINE_IN)
+  status    OrderStatus @default(PENDING)
+  discount  Decimal     @default(0) @db.Decimal(10, 2)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  tableId String?
+  table   RestaurantTable? @relation(fields: [tableId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  items   OrderItem[]
+  invoice Invoice?
+
+  @@index([status])
+  @@index([tableId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String  @id @default(uuid())
+  quantity     Int
+  unitPrice    Decimal @db.Decimal(10, 2)
+  discount     Decimal @default(0) @db.Decimal(10, 2)
+  isOffer      Boolean @default(false)
+  returnReason String?
+
+  orderId    String
+  menuItemId String
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+// ============================================================
+// FACTURATION
+// ============================================================
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  subtotal      Decimal  @db.Decimal(10, 2)
+  discount      Decimal  @default(0) @db.Decimal(10, 2)
+  total         Decimal  @db.Decimal(10, 2)
+  issuedAt      DateTime @default(now())
+
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  payments Payment[]
+
+  @@index([invoiceNumber])
+  @@index([issuedAt])
+  @@map("invoices")
+}
+
+model Payment {
+  id     String        @id @default(uuid())
+  amount Decimal       @db.Decimal(10, 2)
+  method PaymentMethod
+  paidAt DateTime      @default(now())
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+// ============================================================
+// CAISSE
+// ============================================================
+
+model CashRegister {
+  id             String    @id @default(uuid())
+  openingAmount  Decimal   @db.Decimal(10, 2)
+  closingAmount  Decimal?  @db.Decimal(10, 2)
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  movements CashMovement[]
+
+  @@index([userId])
+  @@index([openedAt])
+  @@map("cash_registers")
+}
+
+model CashMovement {
+  id         String           @id @default(uuid())
+  type       CashMovementType
+  amount     Decimal          @db.Decimal(10, 2)
+  reason     String?
+  movedAt    DateTime         @default(now())
+
+  cashRegisterId String
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+
+  @@index([cashRegisterId])
+  @@map("cash_movements")
+}
+
+// ============================================================
+// PARAMÈTRES RESTAURANT
+// ============================================================
+
+model RestaurantSettings {
+  id            String  @id @default(uuid())
+  name          String
+  address       String?
+  phone         String?
+  logoUrl       String?
+  ticketHeader  String?
+  ticketFooter  String?
+
+  @@map("restaurant_settings")
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // created, updated, deleted, login, logout
+  resource   String   // users, orders, stock, ...
+  resourceId String?
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@restaurant/desktop",
+  "version": "1.0.0",
+  "description": "Restaurant Manager — Application Desktop",
+  "main": "dist-electron/main/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"electron .\"",
+    "build": "tsc -p tsconfig.electron.json && electron-builder",
+    "build:win": "tsc -p tsconfig.electron.json && electron-builder --win",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.restaurant.manager",
+    "productName": "Restaurant Manager",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Restaurant Manager",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.2",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.3",
+    "@types/node": "^20.11.20"
+  }
+}
