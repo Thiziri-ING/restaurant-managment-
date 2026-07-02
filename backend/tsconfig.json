@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "Node16",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -9,7 +9,7 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "moduleResolution": "node16",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -20,8 +20,8 @@
     "esModuleInterop": true,
     "allowJs": true,
     "paths": {
-      "@common/*": ["src/common/*"],
-      "@prisma-client": ["src/prisma/prisma.service"]
+      "@common/*": ["./src/common/*"],
+      "@prisma-client": ["./src/prisma/prisma.service"]
     }
   },
   "include": ["src/**/*", "prisma/seed.ts"],
