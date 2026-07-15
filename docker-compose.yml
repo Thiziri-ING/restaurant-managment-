@@ -1,6 +1,7 @@
 version: '3.9'
 
 services:
+<<<<<<< HEAD
   postgres:
     image: postgres:15-alpine
     container_name: restaurant-postgres
@@ -9,10 +10,22 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: restaurant_db
+=======
+  # ── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: restaurant_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: restaurant_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+>>>>>>> c69498bd77f454d09b09f51d8f9863f54f8bd6c5
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - '5432:5432'
+<<<<<<< HEAD
 
   backend:
     build:
@@ -59,3 +72,59 @@ services:
 
 volumes:
   postgres_data:
+=======
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend NestJS ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: restaurant_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/restaurant_db
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-changeme-access-secret-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-changeme-refresh-secret-in-production}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 12
+      FRONTEND_URL: http://frontend:80
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend React (Nginx) ─────────────────────────────────
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: restaurant_frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: restaurant_network
+>>>>>>> c69498bd77f454d09b09f51d8f9863f54f8bd6c5
