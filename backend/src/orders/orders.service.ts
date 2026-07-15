@@ -22,7 +22,7 @@ const ORDER_INCLUDE = {
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(dto: { page?: number; limit?: number; search?: string } & { status?: string; type?: string; date?: string }) {
     const where: any = {};
