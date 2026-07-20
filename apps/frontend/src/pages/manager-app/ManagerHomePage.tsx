@@ -21,6 +21,7 @@ import {
   CalendarCheck, CalendarRange, CalendarDays, ShoppingBasket, MoreHorizontal,
   Camera, Printer, Save, Upload, CircleCheck, CircleX, Layers,
   Banknote, Shield, Calculator, UserPlus, Search, Filter, Image as ImageIcon,
+  Target, Flag, Wallet,
 } from 'lucide-react';
 import { useLogout } from '@/hooks/useAuth';
 
@@ -1482,6 +1483,190 @@ function KpiDetailsModal({ detail, onClose }: { detail: KpiDetail; onClose: () =
 }
 
 /* ============================================================================
+ * KPI Details Modal v2 — cartes horizontales (design riche, consultation seule)
+ * ==========================================================================*/
+type KpiColor2 = 'blue' | 'green' | 'red' | 'orange' | 'purple';
+
+const KPI_COLOR2: Record<KpiColor2, { solid: string; soft: string; text: string }> = {
+  blue:   { solid: 'var(--blue)',   soft: 'var(--blue-soft)',   text: 'var(--blue2)' },
+  green:  { solid: 'var(--green)',  soft: 'var(--green-soft)',  text: 'var(--green)' },
+  red:    { solid: 'var(--red)',    soft: 'var(--red-soft)',    text: 'var(--red)' },
+  orange: { solid: 'var(--orange)', soft: 'var(--orange-soft)', text: 'var(--orange)' },
+  purple: { solid: '#7c3aed',       soft: '#f3e8ff',            text: '#7c3aed' },
+};
+
+interface KpiHeroCard2 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  variant: 'filled' | 'soft';
+  color: KpiColor2;
+}
+
+function KpiHero({ card }: { card: KpiHeroCard2 }) {
+  const c = KPI_COLOR2[card.color];
+  const filled = card.variant === 'filled';
+  const Icon = card.icon;
+  return (
+    <div style={{
+      flex: 1, minWidth: 190, borderRadius: 'var(--r2)', padding: '18px 20px',
+      background: filled ? c.solid : 'var(--surface)',
+      border: filled ? 'none' : '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', gap: '10px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: filled ? 'rgba(255,255,255,0.22)' : c.soft,
+          color: filled ? '#fff' : c.text,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}><Icon size={18} /></div>
+        <span style={{ fontSize: '15px', fontWeight: 800, color: filled ? 'rgba(255,255,255,0.9)' : '#000' }}>{card.label}</span>
+      </div>
+      <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'var(--mono)', color: filled ? '#fff' : c.text }}>
+        {card.value}
+      </div>
+      {card.sub && (
+        <div style={{ fontSize: '14px', fontWeight: 700, color: filled ? 'rgba(255,255,255,0.85)' : '#000' }}>{card.sub}</div>
+      )}
+    </div>
+  );
+}
+
+interface KpiProgressCard2 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  percent: number;
+  footer: string;
+  color: KpiColor2;
+}
+
+function KpiProgress({ card }: { card: KpiProgressCard2 }) {
+  const c = KPI_COLOR2[card.color];
+  const Icon = card.icon;
+  return (
+    <div style={{ flex: 1, minWidth: 160, borderRadius: 'var(--r2)', border: '1px solid var(--border)', background: 'var(--surface)', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: c.soft, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={15} /></div>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: '#000' }}>{card.label}</span>
+      </div>
+      <div style={{ fontSize: '21px', fontWeight: 900, color: '#000', fontFamily: 'var(--mono)' }}>{card.value}</div>
+      <div style={{ height: 6, borderRadius: 4, background: 'var(--surface2)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, card.percent))}%`, background: c.solid, borderRadius: 4 }} />
+      </div>
+      <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{card.footer}</div>
+    </div>
+  );
+}
+
+interface KpiSplitStat2 {
+  leftLabel: string; leftValue: string; leftSub?: string;
+  rightLabel: string; rightValue: string; rightIcon?: React.ElementType;
+  progress: number; progressLeftText: string; progressRightText: string;
+  color: KpiColor2;
+}
+
+function KpiSplit({ stat }: { stat: KpiSplitStat2 }) {
+  const c = KPI_COLOR2[stat.color];
+  const RightIcon = stat.rightIcon;
+  return (
+    <div style={{ borderRadius: 'var(--r2)', border: '1px solid var(--border)', background: 'var(--surface2)', padding: '20px 22px' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: '20px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '15px', fontWeight: 800, color: '#000' }}>{stat.leftLabel}</span>
+          <span style={{ fontSize: '32px', fontWeight: 900, color: c.text, fontFamily: 'var(--mono)' }}>{stat.leftValue}</span>
+          {stat.leftSub && <span style={{ fontSize: '14px', color: '#000', fontWeight: 700 }}>{stat.leftSub}</span>}
+        </div>
+        <div style={{ width: 1, background: 'var(--border2)' }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#000' }}>{stat.rightLabel}</span>
+            {RightIcon && (
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: c.soft, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><RightIcon size={15} /></div>
+            )}
+          </div>
+          <span style={{ fontSize: '32px', fontWeight: 900, color: '#000', fontFamily: 'var(--mono)' }}>{stat.rightValue}</span>
+        </div>
+      </div>
+      <div style={{ marginTop: '16px', height: 8, borderRadius: 5, background: 'var(--surface3)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, stat.progress))}%`, background: c.solid, borderRadius: 5 }} />
+      </div>
+      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, color: c.text }}>
+        <span>{stat.progressLeftText}</span>
+        <span>{stat.progressRightText}</span>
+      </div>
+    </div>
+  );
+}
+
+interface KpiListRow3 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  color: KpiColor2;
+  badge?: boolean;
+}
+
+function KpiListCard({ rows }: { rows: KpiListRow3[] }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: `repeat(auto-fit, minmax(${rows.length > 1 ? '190px' : '260px'}, 1fr))`,
+      gap: '10px',
+    }}>
+      {rows.map((r, i) => {
+        const c = KPI_COLOR2[r.color];
+        const Icon = r.icon;
+        return (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '12px 14px', borderRadius: 'var(--r2)',
+            border: '1px solid var(--border)', background: 'var(--surface)',
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 'var(--r)',
+              background: c.soft, color: c.text,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><Icon size={16} /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</span>
+              <span style={{ fontSize: '16px', fontWeight: 900, color: r.badge ? c.text : '#000', fontFamily: 'var(--mono)' }}>{r.value}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface KpiDetail2 {
+  title: string;
+  subtitle?: string;
+  hero?: KpiHeroCard2[];
+  split?: KpiSplitStat2;
+  pair?: KpiHeroCard2[];
+  progressPair?: KpiProgressCard2[];
+  list?: KpiListRow3[];
+}
+
+function KpiDetailsModalV2({ detail, onClose }: { detail: KpiDetail2; onClose: () => void }) {
+  return (
+    <Modal title={detail.title} subtitle={detail.subtitle} onClose={onClose} width="720px"
+      footer={<button className="btn-default" onClick={onClose}>Fermer</button>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {detail.hero && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.hero.map((h, i) => <KpiHero key={i} card={h} />)}</div>}
+        {detail.split && <KpiSplit stat={detail.split} />}
+        {detail.pair && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.pair.map((h, i) => <KpiHero key={i} card={h} />)}</div>}
+        {detail.progressPair && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.progressPair.map((p, i) => <KpiProgress key={i} card={p} />)}</div>}
+        {detail.list && <KpiListCard rows={detail.list} />}
+      </div>
+    </Modal>
+  );
+}
+
+/* ============================================================================
  * PeriodModal (pour personnalisé)
  * ==========================================================================*/
 interface PeriodModalProps {
@@ -2198,53 +2383,68 @@ function Sidebar({ activePage, onNavigate, collapsed, onToggleCollapsed, onLogou
  * ==========================================================================*/
 
 /* RevenuePage */
-const REVENUE_KPI_DETAILS: Record<string, KpiDetail> = {
+const REVENUE_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
   ca: {
     title: "Chiffre d'affaires — détails",
     subtitle: "Aujourd'hui",
-    rows: [
-      { label: 'CA total', value: '452 800 DA' },
-      { label: 'Évolution vs hier', value: '+12.5%', accent: 'up' },
-      { label: 'CA salle', value: '241 200 DA' },
-      { label: 'CA terrasse', value: '134 500 DA' },
-      { label: 'CA cafétéria', value: '77 100 DA' },
-      { label: 'Nombre de commandes', value: '342' },
-      { label: 'Ticket moyen', value: '1 421 DA' },
-      { label: 'Meilleure heure', value: '12h30 - 14h00' },
+    hero: [
+      { icon: Coins, label: 'CA total', value: '452 800 DA', variant: 'filled', color: 'blue' },
+      { icon: TrendingUp, label: 'Évolution vs hier', value: '+12.5%', sub: '+50 400 DA par rapport à hier', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Armchair, label: 'CA salle', value: '241 200 DA', percent: 53.3, footer: '53.3 % du total', color: 'blue' },
+      { icon: Sun, label: 'CA terrasse', value: '134 500 DA', percent: 29.7, footer: '29.7 % du total', color: 'green' },
+      { icon: Coffee, label: 'CA cafétéria', value: '77 100 DA', percent: 17.0, footer: '17.0 % du total', color: 'orange' },
+    ],
+    list: [
+      { icon: ClipboardList, label: 'Nombre de commandes', value: '342', color: 'purple' },
+      { icon: FileText, label: 'Ticket moyen', value: '1 421 DA', color: 'orange' },
+      { icon: Clock, label: 'Meilleure heure', value: '12h30 - 14h00', color: 'blue', badge: true },
     ],
   },
   benefice: {
     title: 'Bénéfice net — détails',
     subtitle: "Aujourd'hui",
-    rows: [
-      { label: 'Bénéfice net', value: '128 450 DA' },
-      { label: 'Évolution vs hier', value: '+8.2%', accent: 'up' },
-      { label: 'CA', value: '452 800 DA' },
-      { label: 'Coût matières', value: '230 000 DA' },
-      { label: 'Charges', value: '94 350 DA' },
-      { label: 'Marge nette', value: '28.4%' },
+    hero: [
+      { icon: TrendingUp, label: 'Bénéfice net', value: '128 450 DA', variant: 'filled', color: 'green' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+8.2%', sub: 'Bénéfice en hausse', variant: 'soft', color: 'green' },
     ],
+    progressPair: [
+      { icon: Coins, label: 'CA', value: '452 800 DA', percent: 100, footer: 'Base de calcul', color: 'blue' },
+      { icon: ShoppingCart, label: 'Coût matières', value: '230 000 DA', percent: 50.8, footer: '50.8 % du CA', color: 'orange' },
+      { icon: FileText, label: 'Charges', value: '94 350 DA', percent: 20.8, footer: '20.8 % du CA', color: 'red' },
+    ],
+    list: [{ icon: Percent, label: 'Marge nette', value: '28.4 %', color: 'purple' }],
   },
   ticket: {
     title: 'Ticket moyen — détails',
     subtitle: "Aujourd'hui",
-    rows: [
-      { label: 'Ticket moyen', value: '1 421 DA' },
-      { label: 'Évolution vs hier', value: '+3.1%', accent: 'up' },
-      { label: 'Ticket min.', value: '180 DA' },
-      { label: 'Ticket max.', value: '8 400 DA' },
-      { label: 'Nombre de tickets', value: '318' },
+    hero: [
+      { icon: Receipt, label: 'Ticket moyen', value: '1 421 DA', variant: 'filled', color: 'blue' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+3.1%', sub: 'Panier moyen en hausse', variant: 'soft', color: 'green' },
+    ],
+    list: [
+      { icon: ArrowDownRight, label: 'Ticket minimum', value: '180 DA', color: 'red' },
+      { icon: ArrowUpRight, label: 'Ticket maximum', value: '8 400 DA', color: 'green' },
+      { icon: Receipt, label: 'Nombre de tickets', value: '318', color: 'blue' },
     ],
   },
   marge: {
     title: 'Taux de marge — détails',
     subtitle: "Aujourd'hui",
-    rows: [
-      { label: 'Taux de marge', value: '28.4 %' },
-      { label: 'Évolution vs hier', value: '-1.2%', accent: 'down' },
-      { label: 'Coût matières / CA', value: '50.8%' },
-      { label: 'Charges / CA', value: '20.8%' },
-      { label: 'Objectif marge', value: '30%' },
+    split: {
+      leftLabel: 'Taux de marge actuel', leftValue: '28.4 %', leftSub: "sur le chiffre d'affaires",
+      rightLabel: 'Objectif de marge', rightValue: '30 %', rightIcon: Target,
+      progress: 95, progressLeftText: "95 % de l'objectif atteint", progressRightText: '1.6 % restant',
+      color: 'blue',
+    },
+    pair: [
+      { icon: ArrowDownRight, label: 'Évolution vs hier', value: '-1.2%', sub: '↓ Baisse', variant: 'soft', color: 'red' },
+      { icon: Flag, label: 'Objectif marge', value: '30 %', sub: 'Objectif mensuel', variant: 'soft', color: 'orange' },
+    ],
+    progressPair: [
+      { icon: ShoppingCart, label: 'Coût matières / CA', value: '50.8 %', percent: 50.8, footer: '● Élevé', color: 'orange' },
+      { icon: FileText, label: 'Charges / CA', value: '20.8 %', percent: 20.8, footer: '● Maîtrisé', color: 'blue' },
     ],
   },
 };
@@ -2331,8 +2531,8 @@ function RevenuePage() {
           <div className="card"><div className="card-header"><h3><CalendarDays size={16} color="var(--blue)" /> Mois</h3></div><div className="card-body"><div className="stat-row"><div className="lbl">CA</div><div className="val val-price">11 200 000 DA</div></div><div className="stat-row"><div className="lbl">Coût mat.</div><div className="val val-price">5 600 000 DA</div></div><div className="stat-row"><div className="lbl">Charges</div><div className="val val-price">2 240 000 DA</div></div><div className="stat-row"><div className="lbl" style={{color:'var(--green)'}}>Bénéfice</div><div className="val" style={{color:'var(--green)'}}>3 360 000 DA</div></div><div className="stat-row"><div className="lbl">Marge</div><div className="val">30.0%</div></div></div></div>
         </div>
       </div>
-      {kpiOpen && REVENUE_KPI_DETAILS[kpiOpen] && (
-        <KpiDetailsModal detail={REVENUE_KPI_DETAILS[kpiOpen]} onClose={() => setKpiOpen(null)} />
+      {kpiOpen && REVENUE_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={REVENUE_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
   );
@@ -2352,44 +2552,61 @@ const ALL_SOLD_ITEMS = [
   { rank: 10, name: 'Limonade Menthe', cat: 'Boissons', catCls: 'b-green', qty: 88, ca: '39 600 DA', evo: '+9%', up: true },
 ];
 
-const COMMERCIAL_KPI_DETAILS: Record<string, KpiDetail> = {
+const COMMERCIAL_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
   commandes: {
     title: 'Commandes — détails',
-    rows: [
-      { label: 'Total commandes', value: '342' },
-      { label: 'Évolution', value: '-2.4%', accent: 'down' },
-      { label: 'Commandes sur place', value: '265' },
-      { label: 'Commandes à emporter', value: '77' },
-      { label: 'Commandes annulées', value: '14' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: ShoppingBag, label: 'Commandes', value: '342', variant: 'filled', color: 'blue' },
+      { icon: ArrowDownRight, label: 'Évolution vs hier', value: '-2.4%', sub: 'Légère baisse', variant: 'soft', color: 'red' },
+    ],
+    progressPair: [
+      { icon: Armchair, label: 'Sur place', value: '265', percent: 77.5, footer: '77.5 % des commandes', color: 'blue' },
+      { icon: ShoppingBag, label: 'À emporter', value: '77', percent: 22.5, footer: '22.5 % des commandes', color: 'green' },
+    ],
+    list: [
+      { icon: X, label: 'Commandes annulées', value: '14', color: 'red' },
     ],
   },
   tickets: {
     title: 'Tickets encaissés — détails',
-    rows: [
-      { label: 'Tickets encaissés', value: '318' },
-      { label: 'Évolution', value: '+5.7%', accent: 'up' },
-      { label: 'Paiement espèces', value: '185 000 DA' },
-      { label: 'Paiement CIB', value: '198 000 DA' },
-      { label: 'Paiement virement', value: '42 000 DA' },
-      { label: 'Paiement mixte', value: '27 800 DA' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Receipt, label: 'Tickets encaissés', value: '318', variant: 'filled', color: 'green' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+5.7%', sub: 'Bonne progression', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Banknote, label: 'Espèces', value: '185 000 DA', percent: 40.9, footer: '40.9 % des encaissements', color: 'green' },
+      { icon: CreditCard, label: 'CIB', value: '198 000 DA', percent: 43.7, footer: '43.7 % des encaissements', color: 'blue' },
+      { icon: FileText, label: 'Virement', value: '42 000 DA', percent: 9.3, footer: '9.3 % des encaissements', color: 'orange' },
+      { icon: Layers, label: 'Mixte', value: '27 800 DA', percent: 6.1, footer: '6.1 % des encaissements', color: 'purple' },
+    ],
+    list: [
+      { icon: Coins, label: 'Total encaissé', value: '452 800 DA', color: 'blue' },
     ],
   },
   remises: {
     title: 'Remises — détails',
-    rows: [
-      { label: 'Total remises', value: '12 400 DA' },
-      { label: 'Nombre d\'applications', value: '23' },
-      { label: 'Remises manuelles', value: '8 200 DA' },
-      { label: 'Remises fidélité', value: '3 100 DA' },
-      { label: 'Remises offertes', value: '3 200 DA' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Tag, label: 'Total remises', value: '12 400 DA', variant: 'filled', color: 'orange' },
+      { icon: ListOrdered, label: "Nombre d'applications", value: '23', sub: 'Applications ce jour', variant: 'soft', color: 'blue' },
+    ],
+    progressPair: [
+      { icon: Pencil, label: 'Manuelles', value: '8 200 DA', percent: 66.1, footer: '66.1 % des remises', color: 'blue' },
+      { icon: Heart, label: 'Fidélité', value: '3 100 DA', percent: 25.0, footer: '25.0 % des remises', color: 'red' },
+      { icon: Gift, label: 'Offertes', value: '3 200 DA', percent: 25.8, footer: '25.8 % des remises', color: 'purple' },
     ],
   },
   offerts: {
     title: 'Offerts — détails',
-    rows: [
-      { label: 'Total offert', value: '3 200 DA' },
-      { label: 'Nombre d\'articles offerts', value: '9' },
-      { label: 'Motif principal', value: 'Geste commercial' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Gift, label: 'Total offert', value: '3 200 DA', variant: 'filled', color: 'purple' },
+      { icon: Star, label: "Nombre d'articles offerts", value: '9', sub: 'Gestes commerciaux', variant: 'soft', color: 'orange' },
+    ],
+    list: [
+      { icon: Heart, label: 'Motif principal', value: 'Geste commercial', color: 'blue' },
     ],
   },
 };
@@ -2444,8 +2661,8 @@ function CommercialPage() {
           <div className="stat-row"><div className="lbl"><ListOrdered size={15} /> Nb app.</div><div className="val">23</div></div>
         </div></div>
       </div>
-      {kpiOpen && COMMERCIAL_KPI_DETAILS[kpiOpen] && (
-        <KpiDetailsModal detail={COMMERCIAL_KPI_DETAILS[kpiOpen]} onClose={() => setKpiOpen(null)} />
+      {kpiOpen && COMMERCIAL_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={COMMERCIAL_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
   );
@@ -2462,45 +2679,59 @@ const ALL_OUT_OF_STOCK = [
   { name: 'Mozzarella', cat: 'Laitiers', qty: '0 kg', date: 'Hier', badge: 'b-red', label: 'Rupture' },
 ];
 
-const STOCK_KPI_DETAILS: Record<string, KpiDetail> = {
+const STOCK_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
   valeur: {
     title: 'Valeur du stock — détails',
-    rows: [
-      { label: 'Valeur totale', value: '1 450 200 DA' },
-      { label: 'Évolution', value: '+4.2%', accent: 'up' },
-      { label: 'Viandes', value: '450 000 DA' },
-      { label: 'Légumes', value: '120 000 DA' },
-      { label: 'Laitiers', value: '85 000 DA' },
-      { label: 'Épicerie', value: '320 000 DA' },
-      { label: 'Boissons', value: '198 000 DA' },
-      { label: 'Autres', value: '277 200 DA' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Package, label: 'Valeur du stock', value: '1 450 200 DA', variant: 'filled', color: 'blue' },
+      { icon: ArrowUpRight, label: 'Évolution', value: '+4.2%', sub: 'Stock en hausse', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Beef, label: 'Viandes', value: '450 000 DA', percent: 31.0, footer: '31.0 % du stock', color: 'red' },
+      { icon: Salad, label: 'Légumes', value: '120 000 DA', percent: 8.3, footer: '8.3 % du stock', color: 'green' },
+      { icon: GlassWater, label: 'Laitiers', value: '85 000 DA', percent: 5.9, footer: '5.9 % du stock', color: 'blue' },
+      { icon: ShoppingBasket, label: 'Épicerie', value: '320 000 DA', percent: 22.1, footer: '22.1 % du stock', color: 'orange' },
+      { icon: Wine, label: 'Boissons', value: '198 000 DA', percent: 13.7, footer: '13.7 % du stock', color: 'purple' },
+      { icon: MoreHorizontal, label: 'Autres', value: '277 200 DA', percent: 19.1, footer: '19.1 % du stock', color: 'blue' },
     ],
   },
   produits: {
     title: 'Produits en stock — détails',
-    rows: [
-      { label: 'Total articles', value: '1 248' },
-      { label: 'Catégories', value: '37' },
-      { label: 'Articles en dessous du seuil', value: '11' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Box, label: 'Produits en stock', value: '1 248', variant: 'filled', color: 'blue' },
+      { icon: Layers, label: 'Catégories', value: '37', sub: 'Catégories actives', variant: 'soft', color: 'purple' },
+    ],
+    list: [
+      { icon: AlertTriangle, label: 'Articles sous le seuil', value: '11', color: 'orange' },
     ],
   },
   ruptures: {
     title: 'Ruptures — détails',
-    rows: [
-      { label: 'Total ruptures', value: '4' },
-      { label: 'Statut', value: 'Urgent', accent: 'down' },
-      ...ALL_OUT_OF_STOCK.filter(p => p.label !== 'Alerte').map(p => ({ label: p.name, value: `${p.qty} · ${p.cat}` })),
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: AlertTriangle, label: 'Ruptures', value: '4', variant: 'filled', color: 'red' },
+      { icon: Clock, label: 'Statut', value: 'Urgent', sub: 'Action requise', variant: 'soft', color: 'red' },
+    ],
+    list: [
+      { icon: Package, label: 'Filet de Bœuf', value: '2.5 kg · Viandes', color: 'red' },
+      { icon: Fish, label: 'Saumon Frais', value: '0 kg · Poissons', color: 'red' },
+      { icon: GlassWater, label: 'Mozzarella', value: '0 kg · Laitiers', color: 'red' },
     ],
   },
   expirations: {
     title: 'Expirations — détails',
-    rows: [
-      { label: 'Total produits proches expiration', value: '7' },
-      { label: 'Fenêtre', value: '7 jours' },
-      { label: 'Lait Entier', value: '15 L · expire dans 1 j.' },
-      { label: 'Crème Fraîche', value: '4 kg · expire dans 2 j.' },
-      { label: "Huile d'Olive", value: '12 u. · expire dans 4 j.' },
-      { label: 'Farine T45', value: '15 kg · expire dans 7 j.' },
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Clock, label: 'Expirations proches', value: '7', variant: 'filled', color: 'orange' },
+      { icon: CalendarRange, label: 'Fenêtre de surveillance', value: '7 jours', sub: 'Produits à surveiller', variant: 'soft', color: 'blue' },
+    ],
+    list: [
+      { icon: Milk, label: 'Lait Entier', value: '15 L · expire dans 1 j.', color: 'red' },
+      { icon: GlassWater, label: 'Crème Fraîche', value: '4 kg · expire dans 2 j.', color: 'red' },
+      { icon: FlaskConical, label: "Huile d'Olive", value: '12 u. · expire dans 4 j.', color: 'orange' },
+      { icon: Wheat, label: 'Farine T45', value: '15 kg · expire dans 7 j.', color: 'orange' },
     ],
   },
 };
@@ -2551,8 +2782,8 @@ function StockPage() {
           <div className="stat-row"><div className="lbl"><MoreHorizontal size={15} /> Autres</div><div className="val val-price">277 200 DA</div></div>
         </div></div>
       </div>
-      {kpiOpen && STOCK_KPI_DETAILS[kpiOpen] && (
-        <KpiDetailsModal detail={STOCK_KPI_DETAILS[kpiOpen]} onClose={() => setKpiOpen(null)} />
+      {kpiOpen && STOCK_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={STOCK_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
   );
@@ -2754,14 +2985,38 @@ function TablesZonesPage({ searchQuery }: { searchQuery: string }) {
         ...allRows.filter(r => r.status === 'reservee').map(r => ({ label: r.name, value: r.reservationDate || 'À définir' })),
       ],
     },
-    montant: {
-      title: 'Montant en cours — détails',
-      rows: [
-        { label: 'Montant en cours', value: `${montantEnCours.toLocaleString()} DA` },
-        { label: 'Tables occupées', value: String(occupees) },
-        { label: 'Montant moyen / table', value: occupees > 0 ? `${Math.round(montantEnCours / occupees).toLocaleString()} DA` : '0 DA' },
-      ],
-    },
+  };
+
+  const montantEnCoursDetail: KpiDetail2 = {
+    title: 'Montant en cours — détails',
+    hero: [
+      {
+        icon: Wallet,
+        label: 'Montant en cours',
+        value: `${montantEnCours.toLocaleString()} DA`,
+        sub: 'Total des commandes en cours',
+        variant: 'filled',
+        color: 'blue',
+      },
+    ],
+    pair: [
+      {
+        icon: Armchair,
+        label: 'Tables occupées',
+        value: String(occupees),
+        sub: 'Tables actuellement utilisées',
+        variant: 'soft',
+        color: 'blue',
+      },
+      {
+        icon: BarChart3,
+        label: 'Montant moyen / table',
+        value: occupees > 0 ? `${Math.round(montantEnCours / occupees).toLocaleString()} DA` : '0 DA',
+        sub: 'Moyenne par table occupée',
+        variant: 'soft',
+        color: 'green',
+      },
+    ],
   };
 
   return (
@@ -2778,7 +3033,10 @@ function TablesZonesPage({ searchQuery }: { searchQuery: string }) {
         <ZoneTable title="Terrasse" icon={Sun} headerBg="var(--green-soft)" headerColor="var(--green)" countColor="var(--green)" rows={terrasseFiltered} onCycle={(id) => cycle(terrasse, setTerrasse, id)} />
         <ZoneTable title="Cafétéria" icon={Coffee} headerBg="var(--orange-soft)" headerColor="var(--orange)" countColor="var(--orange)" rows={cafetFiltered} onCycle={(id) => cycle(cafet, setCafet, id)} />
       </div>
-      {kpiOpen && tablesKpiDetails[kpiOpen] && (
+      {kpiOpen === 'montant' && (
+        <KpiDetailsModalV2 detail={montantEnCoursDetail} onClose={() => setKpiOpen(null)} />
+      )}
+      {kpiOpen && kpiOpen !== 'montant' && tablesKpiDetails[kpiOpen] && (
         <KpiDetailsModal detail={tablesKpiDetails[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
