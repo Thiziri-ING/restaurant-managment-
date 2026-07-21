@@ -218,6 +218,7 @@ const MANAGER_DASHBOARD_CSS = `
   background: linear-gradient(180deg, #ffffff 0%, var(--surface2) 100%);
   color: #000;
   border: 1.5px solid var(--border);
+  border-radius: 9999px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 .mgr-dashboard .btn-default:hover { background: var(--surface3); border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15,23,42,0.1); }
@@ -225,8 +226,17 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-primary,
 .mgr-dashboard button.btn-primary {
   background: var(--blue);
-  color: #000;
+  color: #fff;
   border: 1.5px solid var(--blue2);
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 3px 0 var(--blue2), 0 6px 16px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 .mgr-dashboard .btn-primary:hover {
@@ -241,8 +251,17 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-danger,
 .mgr-dashboard button.btn-danger {
   background: var(--red);
-  color: #000;
+  color: #fff;
   border: 1.5px solid #991b1b;
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 3px 0 #991b1b, 0 6px 16px rgba(185,28,28,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .mgr-dashboard .btn-danger:hover {
@@ -255,8 +274,17 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-success,
 .mgr-dashboard button.btn-success {
   background: var(--green);
-  color: #000;
+  color: #fff;
   border: 1.5px solid #086b32;
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 3px 0 #086b32, 0 6px 16px rgba(11,126,61,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .mgr-dashboard .btn-success:hover {
@@ -269,8 +297,17 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-warning,
 .mgr-dashboard button.btn-warning {
   background: var(--orange);
-  color: #000;
+  color: #fff;
   border: 1.5px solid #92400e;
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 3px 0 #92400e, 0 6px 16px rgba(180,83,9,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .mgr-dashboard .btn-warning:hover {
@@ -285,6 +322,15 @@ const MANAGER_DASHBOARD_CSS = `
   background: #ffffff;
   color: #000;
   border: 1.5px solid var(--border2);
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 3px 0 var(--border2), 0 4px 10px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 .mgr-dashboard .btn-ghost:hover {
@@ -326,39 +372,39 @@ const MANAGER_DASHBOARD_CSS = `
 
 /* ----- Bouton notification (cloche) ----- */
 .mgr-dashboard .notif-btn {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 9999px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid var(--border2);
-  background: linear-gradient(180deg, #ffffff 0%, var(--surface2) 100%);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   cursor: pointer;
   position: relative;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #000;
-  box-shadow: 0 3px 0 var(--border2), 0 3px 8px rgba(15,23,42,0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.03);
   flex-shrink: 0;
 }
 .mgr-dashboard .notif-btn:hover {
-  background: var(--blue-soft);
-  border-color: var(--blue2);
-  color: var(--blue2);
-  transform: translateY(-2px);
-  box-shadow: 0 3px 0 var(--blue2), 0 8px 18px rgba(37,99,235,0.18);
+  background: var(--surface2);
+  border-color: var(--border2);
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15,23,42,0.06);
 }
-.mgr-dashboard .notif-btn:active { transform: translateY(1px) scale(0.96); box-shadow: 0 1px 0 var(--border2), 0 3px 8px rgba(15,23,42,0.08); }
+.mgr-dashboard .notif-btn:active { transform: translateY(1px); }
 .mgr-dashboard .notif-badge {
-  position: absolute; top: -6px; right: -6px;
-  background: linear-gradient(135deg, var(--red) 0%, #991b1b 100%);
+  position: absolute; top: -3px; right: -3px;
+  background: var(--red);
   color: #fff;
-  border: 2px solid var(--surface);
+  border: 1.5px solid var(--surface);
   border-radius: 50%;
-  min-width: 20px; height: 20px; padding: 0 3px;
-  font-size: 16px; font-weight: 800;
+  min-width: 17px; height: 17px;
+  font-size: 10.5px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(185,28,28,0.4);
+  box-shadow: 0 2px 6px rgba(185,28,28,0.3);
 }
 
 /* ----- Modals ----- */
@@ -464,7 +510,8 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .app { display: flex; flex-direction: column; min-height: 100vh; }
 .mgr-dashboard .topbar {
   height: var(--topbar-h);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -474,11 +521,12 @@ const MANAGER_DASHBOARD_CSS = `
   top: 0; left: 0; right: 0;
   z-index: 200;
   gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01), 0 2px 8px rgba(0,0,0,0.02);
 }
 .mgr-dashboard .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   overflow: hidden;
 }
@@ -490,11 +538,28 @@ const MANAGER_DASHBOARD_CSS = `
   color: #fff; font-size: 18px; flex-shrink: 0;
   box-shadow: var(--shadow-glow);
 }
-.mgr-dashboard .brand-name { font-size: 17px; font-weight: 800; color: #000; white-space: nowrap; }
-.mgr-dashboard .brand-sub { font-size: 16px; color: #000; white-space: nowrap; font-weight: 800; }
+.mgr-dashboard .brand-name { font-size: 11px; font-weight: 700; color: var(--blue2); text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
+.mgr-dashboard .brand-sub { font-size: 14.5px; color: #0f172a; font-weight: 800; line-height: 1.2; }
 .mgr-dashboard .topbar-center { flex: 1; display: flex; align-items: center; gap: 12px; }
-.mgr-dashboard .topbar-title { font-size: 17px; font-weight: 800; color: #000; }
-.mgr-dashboard .topbar-date { font-size: 17px; color: #000; display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+.mgr-dashboard .topbar-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--blue2);
+  background: var(--blue-soft);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  white-space: nowrap;
+}
+.mgr-dashboard .topbar-date {
+  font-size: 13.5px;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .mgr-dashboard .period-group {
   display: flex;
   background: var(--surface2);
@@ -543,10 +608,17 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .period-option-item.current { color: var(--blue2); }
 .mgr-dashboard .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .mgr-dashboard .avatar {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   background: var(--blue-soft); color: var(--blue2);
   display: flex; align-items: center; justify-content: center;
-  font-size: 17px; font-weight: 800; cursor: pointer; flex-shrink: 0;
+  font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--blue-soft), 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+}
+.mgr-dashboard .avatar:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px var(--blue), 0 4px 10px rgba(37,99,235,0.15);
 }
 
 /* ----- Body & Main ----- */
@@ -659,7 +731,7 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .charts-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .mgr-dashboard .charts-2eq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .mgr-dashboard .chart-wrap { position: relative; width: 100%; }
-.mgr-dashboard .zone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mgr-dashboard .zone-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
 /* ----- Tables ----- */
 .mgr-dashboard .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -784,7 +856,7 @@ const MANAGER_DASHBOARD_CSS = `
 
 .mgr-dashboard .link { color: var(--blue); font-size: 17px; font-weight: 800; cursor: pointer; border: none; background: none; }
 .mgr-dashboard .field { display: flex; flex-direction: column; gap: 5px; }
-.mgr-dashboard .field label { font-size: 16px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: 0.04em; }
+.mgr-dashboard .field label { font-size: 12.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
 .mgr-dashboard .search-wrap {
   position: relative; flex: 1; max-width: 280px;
 }
@@ -994,6 +1066,22 @@ const MANAGER_DASHBOARD_CSS = `
   border-top: 1px solid #000;
   margin-top: 24px;
   padding-top: 4px;
+}
+.mgr-dashboard .logo-uploader-btn {
+  transition: all 0.2s ease-in-out;
+}
+.mgr-dashboard .logo-uploader-btn:hover {
+  border-color: var(--blue) !important;
+  background: var(--blue-soft) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
+  color: var(--blue2) !important;
+}
+.mgr-dashboard .logo-uploader-btn:hover svg {
+  color: var(--blue) !important;
+}
+.mgr-dashboard .logo-uploader-btn:hover .hover-overlay {
+  opacity: 1 !important;
 }
 `;
 
@@ -1886,7 +1974,6 @@ function Topbar({
         {showExportButtons && (
           <>
             <button className="btn-ghost" onClick={() => setExportOpen(true)}><Download size={15} /> Exporter</button>
-            <button className="btn-primary" onClick={() => setReportOpen(true)}><FileText size={15} /> Rapport PDF</button>
           </>
         )}
         <button
@@ -1993,33 +2080,7 @@ function Topbar({
         </Modal>
       )}
 
-      {showExport && reportOpen && (
-        <Modal
-          title="Rapport PDF"
-          subtitle="Aperçu du rapport généré pour la période sélectionnée"
-          onClose={() => setReportOpen(false)}
-          width="560px"
-          footer={
-            <>
-              <button className="btn-ghost" onClick={() => setReportOpen(false)}>Fermer</button>
-              <button className="btn-primary" onClick={() => { exportRowsToPDF(reportMeta, reportRows, `Rapport_${reportTitle.replace(/\s+/g, '_')}_${toInputDate(new Date())}.pdf`); setReportOpen(false); }}>
-                <Download size={14} /> Télécharger le PDF
-              </button>
-            </>
-          }
-        >
-          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', padding: '20px', background: 'var(--surface2)' }}>
-            <div style={{ fontSize:'18px', fontWeight: 900, marginBottom: '2px', color: '#000' }}>{RESTAURANT_INFO.name}</div>
-            <div style={{ fontSize:'15px', color: '#000', marginBottom: '2px' }}>{RESTAURANT_INFO.address}</div>
-            <div style={{ fontSize:'15px', color: '#000', marginBottom: '10px' }}>Tél : {RESTAURANT_INFO.phone} · {RESTAURANT_INFO.email}</div>
-            <div style={{ fontSize:'16px', fontWeight: 800, marginBottom: '2px', color: '#000' }}>{reportTitle} — {periodKindLabel(activePeriod)}</div>
-            <div style={{ fontSize:'15px', color: '#000', marginBottom: '14px' }}>Période : {periodLabel} · Généré le {formatDateFR(new Date())}</div>
-            {reportRows[0] && Object.entries(reportRows[0]).map(([k, v]) => (
-              <div className="stat-row" key={k}><div className="lbl">{k}</div><div className="val">{v}</div></div>
-            ))}
-          </div>
-        </Modal>
-      )}
+
 
       {profileOpen && (
         <Modal
@@ -2313,7 +2374,7 @@ function StockPage() {
         </div>
       </div>
       <div className="section charts-2eq">
-        <div className="card tbl-wrap">
+        <div className="card" style={{overflow: 'visible'}}>
           <div className="card-header"><h3><AlertCircle size={16} color="var(--red)" /> Ruptures</h3><button className="link" onClick={() => setShowAllOOS(true)}>Voir tout →</button></div>
           <table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Date</th><th>Statut</th></tr></thead>
           <tbody>
@@ -2322,7 +2383,7 @@ function StockPage() {
             ))}
           </tbody></table>
         </div>
-        <div className="card tbl-wrap">
+        <div className="card" style={{overflow: 'visible'}}>
           <div className="card-header"><h3><Clock size={16} color="var(--orange)" /> Proches expiration</h3></div>
           <table><thead><tr><th>Produit</th><th>Qté</th><th>Expiration</th><th>Jours</th><th>Valeur</th></tr></thead>
           <tbody>
@@ -2364,20 +2425,66 @@ function RestaurantSettingsPage() {
       <div className="section charts-2eq">
         <div className="card">
           <div className="card-header"><h3><Store size={16} color="var(--blue)" /> Identité du restaurant</h3></div>
-          <div className="card-body" style={{display:'flex', flexDirection:'column', gap:'14px'}}>
-            <div style={{display:'flex', gap:'16px', alignItems:'flex-start'}}>
-              <div onClick={() => setLogoOpen(true)} style={{width:'80px', height:'80px', borderRadius:'50%', border:'2px dashed var(--border)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'4px', color:'#000', fontSize:'15px', cursor:'pointer'}}><Camera size={22} />Logo</div>
-              <div style={{flex:'1', display:'flex', flexDirection:'column', gap:'10px'}}>
+          <div className="card-body" style={{display:'flex', flexDirection:'column', gap:'18px'}}>
+            <div style={{display:'flex', gap:'20px', alignItems:'center', marginBottom:'4px'}}>
+              <div
+                onClick={() => setLogoOpen(true)}
+                className="logo-uploader-btn"
+                style={{
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  border: '2px dashed var(--border2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: 'var(--surface2)',
+                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                }}
+              >
+                <Camera size={24} color="#64748b" />
+                <span>Logo</span>
+                <div
+                  className="hover-overlay"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(37, 99, 235, 0.92)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    gap: '2px'
+                  }}
+                >
+                  <Upload size={18} />
+                  <span>Modifier</span>
+                </div>
+              </div>
+              <div style={{flex:'1', display:'flex', flexDirection:'column', gap:'12px'}}>
                 <div className="field"><label>Nom</label><input className="input" defaultValue="L'Arôme Gourmet" /></div>
                 <div className="field"><label>Téléphone</label><input className="input" defaultValue="+213 21 54 87 96" /></div>
               </div>
             </div>
             <div className="field"><label>Adresse</label><input className="input" defaultValue="12 Rue des Frères Bouadou, Bir Mourad Raïs, Alger" /></div>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px'}}>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px'}}>
               <div className="field"><label>Devise</label><select className="input"><option>Dinar Algérien (DA)</option></select></div>
               <div className="field"><label>Format date</label><select className="input"><option>JJ/MM/AAAA</option><option>MM/JJ/AAAA</option></select></div>
             </div>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px'}}>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px'}}>
               <div className="field"><label>Registre de commerce (RC)</label><input className="input" defaultValue="16/00-1234567B24" /></div>
               <div className="field"><label>NIF</label><input className="input" defaultValue="000216123456789" /></div>
             </div>
@@ -2387,7 +2494,7 @@ function RestaurantSettingsPage() {
           <div className="card-header"><h3><Printer size={16} color="var(--blue)" /> Contenu du ticket</h3></div>
           <div className="card-body">
             <div className="field"><label>En-tête</label><input className="input" defaultValue="Authentic Algerian Gastronomy" /></div>
-            <div className="field"><label>Pied de page</label><textarea className="input" defaultValue={`Bon Appétit !\nMerci de votre confiance.\nOuvert 7j/7 de 11h à 23h.`}></textarea></div>
+            <div className="field"><label>Pied de page</label><textarea className="input" rows={3} style={{ minHeight: '95px', resize: 'vertical' }} defaultValue={`Bon Appétit !\nMerci de votre confiance.\nOuvert 7j/7 de 11h à 23h.`}></textarea></div>
             <div style={{border:'1px solid var(--border)', borderRadius:'var(--r)', padding:'14px', background:'var(--surface2)'}}>
               <div style={{fontSize:'15px', fontWeight:'800', color:'#000', marginBottom:'10px', display:'flex', alignItems:'center', gap:'5px'}}><Eye size={13} /> APERÇU</div>
               <div style={{fontFamily:"'Courier New', monospace", fontSize:'15px', lineHeight:'1.7', color:'#000', textAlign:'center', border:'1px dashed var(--border)', borderRadius:'6px', padding:'12px'}}>
@@ -2443,18 +2550,29 @@ const STATUS_BADGE: Record<TableStatus, { cls: string; label: string }> = {
   reservee: { cls:'b-amber', label:'● Réservée' },
 };
 
-function ZoneTable({ title, icon: Icon, headerBg, headerColor, countColor, rows, onCycle }: {
-  title: string; icon: React.ElementType; headerBg: string; headerColor: string; countColor: string; rows: TableRow[]; onCycle: (id: string) => void;
+function ZoneTable({ title, icon: Icon, headerBg, headerColor, countColor, rows, onCycle, statusFilter }: {
+  title: string; icon: React.ElementType; headerBg: string; headerColor: string; countColor: string;
+  rows: TableRow[]; onCycle: (id: string) => void; statusFilter: string | null;
 }) {
+  const filtered = statusFilter ? rows.filter(r => r.status === statusFilter) : rows;
   return (
     <div className="card tbl-wrap">
       <div className="card-header" style={{background: headerBg, borderBottomColor: headerColor}}>
-        <h3 style={{color: headerColor}}><Icon size={16} /> {title} <span style={{fontWeight:'800', fontSize:'15px', color: countColor}}>{rows.length}</span></h3>
+        <h3 style={{color: headerColor}}>
+          <Icon size={16} /> {title}{' '}
+          <span style={{fontWeight:'800', fontSize:'15px', color: countColor}}>
+            {filtered.length}{statusFilter ? ` / ${rows.length}` : ''}
+          </span>
+        </h3>
       </div>
       <table><thead><tr><th>Table</th><th>Capacité</th><th>Statut</th></tr></thead>
-      <tbody>{rows.map((r) => (
-        <tr key={r.id}><td className="td-name">{r.name}</td><td>{r.capacity} pers.</td><td><span className={`badge ${STATUS_BADGE[r.status].cls}`} style={{cursor:'pointer'}} onClick={() => onCycle(r.id)}>{STATUS_BADGE[r.status].label}</span></td></tr>
-      ))}</tbody></table>
+      <tbody>
+        {filtered.length === 0 ? (
+          <tr><td colSpan={3} style={{textAlign:'center', color:'#888', padding:'20px', fontSize:'15px'}}>Aucune table pour ce filtre</td></tr>
+        ) : filtered.map((r) => (
+          <tr key={r.id}><td className="td-name">{r.name}</td><td>{r.capacity} pers.</td><td><span className={`badge ${STATUS_BADGE[r.status].cls}`} style={{cursor:'pointer'}} onClick={() => onCycle(r.id)}>{STATUS_BADGE[r.status].label}</span></td></tr>
+        ))}
+      </tbody></table>
     </div>
   );
 }
@@ -2482,8 +2600,14 @@ function TablesZonesPage() {
     { id:'c4', name:'C-4', capacity:2, status:'occupee' },
   ]);
 
+  const [statusFilter, setStatusFilter] = useState<'libre' | 'occupee' | 'reservee' | null>(null);
+
   const cycle = (rows: TableRow[], setRows: (r: TableRow[]) => void, id: string) => {
     setRows(rows.map((r) => (r.id === id ? { ...r, status: STATUS_CYCLE[r.status] } : r)));
+  };
+
+  const toggleFilter = (f: 'libre' | 'occupee' | 'reservee') => {
+    setStatusFilter(prev => prev === f ? null : f);
   };
 
   const allRows = [...salle, ...terrasse, ...cafet];
@@ -2493,19 +2617,74 @@ function TablesZonesPage() {
   const reservees = allRows.filter(r => r.status === 'reservee').length;
   const montantEnCours = occupees * 1500;
 
+  const kpiActiveStyle = (f: string): React.CSSProperties => statusFilter === f
+    ? { outline: '2.5px solid currentColor', outlineOffset: '2px', transform: 'translateY(-2px)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' }
+    : {};
+
   return (
     <>
       <div className="section" style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon blue"><LayoutGrid size={22} /></div><div className="kpi-content"><div className="kpi-label">Total tables</div><div className="kpi-value">{total}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon green"><CircleCheck size={22} /></div><div className="kpi-content"><div className="kpi-label">Libres</div><div className="kpi-value" style={{color:'var(--green)'}}>{libres}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon red"><Users size={22} /></div><div className="kpi-content"><div className="kpi-label">Occupées</div><div className="kpi-value" style={{color:'var(--red)'}}>{occupees}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon orange"><CalendarCheck size={22} /></div><div className="kpi-content"><div className="kpi-label">Réservées</div><div className="kpi-value" style={{color:'var(--orange)'}}>{reservees}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon blue"><Banknote size={22} /></div><div className="kpi-content"><div className="kpi-label">Montant en cours</div><div className="kpi-value kpi-price">{montantEnCours.toLocaleString()} <small>DA</small></div></div></div>
+        {/* Total — pas filtrable, remet à zéro */}
+        <div
+          className="kpi-card"
+          style={{flex:'1', cursor:'pointer', ...(statusFilter === null ? { outline: '2.5px solid var(--blue)', outlineOffset:'2px', transform:'translateY(-2px)', boxShadow:'0 6px 18px rgba(37,99,235,0.18)' } : {})}}
+          onClick={() => setStatusFilter(null)}
+          title="Afficher tout"
+        >
+          <div className="kpi-icon blue"><LayoutGrid size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Total tables</div><div className="kpi-value">{total}</div></div>
+        </div>
+
+        <div
+          className="kpi-card"
+          style={{flex:'1', cursor:'pointer', color:'var(--green)', ...kpiActiveStyle('libre')}}
+          onClick={() => toggleFilter('libre')}
+          title="Filtrer : Libres"
+        >
+          <div className="kpi-icon green"><CircleCheck size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Libres</div><div className="kpi-value" style={{color:'var(--green)'}}>{libres}</div></div>
+        </div>
+
+        <div
+          className="kpi-card"
+          style={{flex:'1', cursor:'pointer', color:'var(--red)', ...kpiActiveStyle('occupee')}}
+          onClick={() => toggleFilter('occupee')}
+          title="Filtrer : Occupées"
+        >
+          <div className="kpi-icon red"><Users size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Occupées</div><div className="kpi-value" style={{color:'var(--red)'}}>{occupees}</div></div>
+        </div>
+
+        <div
+          className="kpi-card"
+          style={{flex:'1', cursor:'pointer', color:'var(--orange)', ...kpiActiveStyle('reservee')}}
+          onClick={() => toggleFilter('reservee')}
+          title="Filtrer : Réservées"
+        >
+          <div className="kpi-icon orange"><CalendarCheck size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Réservées</div><div className="kpi-value" style={{color:'var(--orange)'}}>{reservees}</div></div>
+        </div>
+
+        <div className="kpi-card" style={{flex:'1'}}>
+          <div className="kpi-icon blue"><Banknote size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Montant en cours</div><div className="kpi-value kpi-price">{montantEnCours.toLocaleString()} <small>DA</small></div></div>
+        </div>
       </div>
+
+      {statusFilter && (
+        <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px', padding:'8px 4px'}}>
+          <span style={{fontSize:'15px', color:'#555'}}>Filtre actif :</span>
+          <span className={`badge ${ statusFilter === 'libre' ? 'b-green' : statusFilter === 'occupee' ? 'b-red' : 'b-amber' }`}>
+            {statusFilter === 'libre' ? '● Libre' : statusFilter === 'occupee' ? '● Occupée' : '● Réservée'}
+          </span>
+          <button className="btn-ghost" style={{padding:'4px 12px', fontSize:'13px'}} onClick={() => setStatusFilter(null)}>✕ Réinitialiser</button>
+        </div>
+      )}
+
       <div className="section zone-grid">
-        <ZoneTable title="Salle" icon={Armchair} headerBg="var(--blue-soft)" headerColor="var(--blue2)" countColor="var(--blue)" rows={salle} onCycle={(id) => cycle(salle, setSalle, id)} />
-        <ZoneTable title="Terrasse" icon={Sun} headerBg="var(--green-soft)" headerColor="var(--green)" countColor="var(--green)" rows={terrasse} onCycle={(id) => cycle(terrasse, setTerrasse, id)} />
-        <ZoneTable title="Cafétéria" icon={Coffee} headerBg="var(--orange-soft)" headerColor="var(--orange)" countColor="var(--orange)" rows={cafet} onCycle={(id) => cycle(cafet, setCafet, id)} />
+        <ZoneTable title="Salle" icon={Armchair} headerBg="var(--blue-soft)" headerColor="var(--blue2)" countColor="var(--blue)" rows={salle} onCycle={(id) => cycle(salle, setSalle, id)} statusFilter={statusFilter} />
+        <ZoneTable title="Terrasse" icon={Sun} headerBg="var(--green-soft)" headerColor="var(--green)" countColor="var(--green)" rows={terrasse} onCycle={(id) => cycle(terrasse, setTerrasse, id)} statusFilter={statusFilter} />
+        <ZoneTable title="Cafétéria" icon={Coffee} headerBg="var(--orange-soft)" headerColor="var(--orange)" countColor="var(--orange)" rows={cafet} onCycle={(id) => cycle(cafet, setCafet, id)} statusFilter={statusFilter} />
       </div>
     </>
   );
@@ -2559,14 +2738,14 @@ function UsersPage() {
 
   return (
     <>
-      <div className="section" style={{display:'flex', justifyContent:'flex-end', alignItems:'center'}}>
-        <button className="btn-primary" onClick={() => setNewUserOpen(true)}><UserPlus size={15} /> Nouvel utilisateur</button>
-      </div>
-      <div className="section" style={{display:'flex', gap:'10px'}}>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon blue"><Users size={22} /></div><div className="kpi-content"><div className="kpi-label">Total</div><div className="kpi-value">{staff.length}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon purple"><Shield size={22} /></div><div className="kpi-content"><div className="kpi-label">Managers</div><div className="kpi-value">{staff.filter(u=>u.role==='Manager').length}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon green"><Calculator size={22} /></div><div className="kpi-content"><div className="kpi-label">Caissiers</div><div className="kpi-value">{staff.filter(u=>u.role==='Caissier').length}</div></div></div>
-        <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon orange"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Magasiniers</div><div className="kpi-value">{staff.filter(u=>u.role==='Magasinier').length}</div></div></div>
+      <div className="section" style={{display:'flex', gap:'10px', alignItems:'center', flexWrap:'wrap'}}>
+        <div style={{display:'flex', gap:'10px', flex:'1', minWidth:'300px', flexWrap:'wrap'}}>
+          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon blue"><Users size={22} /></div><div className="kpi-content"><div className="kpi-label">Total</div><div className="kpi-value">{staff.length}</div></div></div>
+          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon purple"><Shield size={22} /></div><div className="kpi-content"><div className="kpi-label">Managers</div><div className="kpi-value">{staff.filter(u=>u.role==='Manager').length}</div></div></div>
+          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon green"><Calculator size={22} /></div><div className="kpi-content"><div className="kpi-label">Caissiers</div><div className="kpi-value">{staff.filter(u=>u.role==='Caissier').length}</div></div></div>
+          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon orange"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Magasiniers</div><div className="kpi-value">{staff.filter(u=>u.role==='Magasinier').length}</div></div></div>
+        </div>
+        <button className="btn-primary" style={{flexShrink:0}} onClick={() => setNewUserOpen(true)}><UserPlus size={15} /> Nouvel utilisateur</button>
       </div>
       <div className="section card tbl-wrap">
         <div className="card-header">
@@ -3163,22 +3342,39 @@ function TicketCaisseDoc({ ticket }: { ticket: TicketCaisse }) {
   );
 }
 
-function FluxPage() {
+function FluxPage({ activePeriod, periodLabel }: { activePeriod: Period; periodLabel: string }) {
   const [typeFilter, setTypeFilter] = useState<'Tous' | 'Entrée' | 'Sortie'>('Tous');
   const [detailEntry, setDetailEntry] = useState<FluxEntry | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
 
   const filteredData = typeFilter === 'Tous' ? FLUX_DATA : FLUX_DATA.filter(item => item.type === typeFilter);
+
+  const doExport = () => {
+    const rows: ExportRow[] = filteredData.map(item => ({
+      Date: item.date,
+      Type: item.type,
+      'Libellé': item.libelle,
+      'Montant (DA)': item.montant,
+      Source: item.source
+    }));
+    const meta: ReportMeta = { title: "Flux (Entrées & Sorties)", period: activePeriod, periodLabel };
+    runExport(exportFormat, meta, rows, `Flux_Entrees_Sorties_${toInputDate(new Date())}`);
+    setExportOpen(false);
+  };
 
   return (
     <>
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
         <div><div className="page-title" style={{fontSize:'22px', fontWeight:'800', color:'#000'}}>Entrées & Sorties</div><div className="page-sub">Sorties : bons de commande stock · Entrées : tickets de caisse</div></div>
-        <div style={{display:'flex', gap:'8px'}}>
+        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
           {(['Tous','Entrée','Sortie'] as const).map(type => (
             <button key={type} className="btn-ghost" style={typeFilter === type ? {borderColor:'var(--blue)', color:'var(--blue)'} : {}} onClick={() => setTypeFilter(type)}>
               {type}
             </button>
           ))}
+          <div style={{width:'1px', height:'20px', background:'var(--border)', margin:'0 4px'}}></div>
+          <button className="btn-ghost" onClick={() => setExportOpen(true)}><Download size={14} /> Exporter</button>
         </div>
       </div>
       <div className="section card tbl-wrap">
@@ -3232,6 +3428,39 @@ function FluxPage() {
           }
         >
           <TicketCaisseDoc ticket={detailEntry.ticket} />
+        </Modal>
+      )}
+      {/* Modal d'exportation globale */}
+      {exportOpen && (
+        <Modal
+          title="Exporter les flux"
+          subtitle={`${filteredData.length} flux · ${periodKindLabel(activePeriod)}`}
+          onClose={() => setExportOpen(false)}
+          footer={
+            <>
+              <button className="btn-ghost" onClick={() => setExportOpen(false)}>Annuler</button>
+              <button className="btn-primary" onClick={doExport}><Download size={14} /> Télécharger</button>
+            </>
+          }
+        >
+          <div className="field">
+            <label>Format d&apos;export</label>
+            <div className="radio-row">
+              {([
+                { id: 'excel', label: 'Excel (.xlsx)' },
+                { id: 'pdf', label: 'PDF (.pdf)' },
+                { id: 'csv', label: 'CSV (.csv)' }
+              ] as const).map(opt => (
+                <div
+                  key={opt.id}
+                  className={`radio-opt${exportFormat === opt.id ? ' selected' : ''}`}
+                  onClick={() => setExportFormat(opt.id)}
+                >
+                  <input type="radio" checked={exportFormat === opt.id} readOnly /> {opt.label}
+                </div>
+              ))}
+            </div>
+          </div>
         </Modal>
       )}
     </>
@@ -3314,7 +3543,7 @@ export function ManagerPage({ onBack }: { onBack?: () => void }) {
             {activePage === 'tables' && <TablesZonesPage />}
             {activePage === 'users' && <UsersPage />}
             {activePage === 'menu' && <MenuPage />}
-            {activePage === 'flux' && <FluxPage />}
+            {activePage === 'flux' && <FluxPage activePeriod={activePeriod} periodLabel={periodLabel} />}
             {activePage === 'audit' && <AuditPage activePeriod={activePeriod} periodLabel={periodLabel} />}
           </main>
         </div>
