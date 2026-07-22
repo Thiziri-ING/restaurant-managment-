@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
       host: env.VITE_HOST ?? '0.0.0.0',
       port: preferredPort,
       strictPort: false,
+      open: true,
       proxy: {
         '/api': {
           target: env.VITE_API_URL ?? 'http://localhost:3000',

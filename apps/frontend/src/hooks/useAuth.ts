@@ -16,8 +16,9 @@ export function useLogin() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       toast.success(`Bienvenue ${data.user.fullName} !`);
     },
-    onError: () => {
-      toast.error('Email ou mot de passe incorrect');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Impossible de contacter le serveur (erreur réseau)';
+      toast.error(message);
     },
   });
 }

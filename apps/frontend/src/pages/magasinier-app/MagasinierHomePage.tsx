@@ -137,8 +137,7 @@ interface LossHistoryEntry {
   valueSaved: number;
 }
 
-type SectionKey = "dashboard" | "articles" | "categories" | "alertes" | "expirations" | "analyses" | "fournisseurs" | "entrees" | "sorties";
-type AnalysesPeriod = "jour" | "semaine" | "mois";
+type SectionKey = "dashboard" | "articles" | "categories" | "alertes" | "expirations" | "fournisseurs" | "entrees" | "sorties";
 type ExpirationUrgency = "Critique" | "Imminent" | "À surveiller";
 
 const uid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36).slice(-4)}`;
@@ -352,155 +351,6 @@ function FileDropInput({ label, fileName, onFile }: { label: string; fileName?: 
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Graphiques interactifs (SVG maison, sans dépendance externe)        */
-/* ------------------------------------------------------------------ */
-
-const DONUT_COLORS = ["var(--blue)", "var(--green)", "var(--orange)", "var(--purple)", "var(--cyan)", "var(--red)"];
-
-function DonutChart({ data, unitLabel = "DA" }: { data: { name: string; value: number; color?: string }[]; unitLabel?: string }) {
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const total = Math.max(1, data.reduce((sum, d) => sum + d.value, 0));
-  const size = 160;
-  const radius = 58;
-  const stroke = 20;
-  const center = size / 2;
-  const circumference = 2 * Math.PI * radius;
-  let cumulative = 0;
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-          <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--surface3)" strokeWidth={stroke} />
-          {data.map((d, i) => {
-            const fraction = d.value / total;
-            const dash = fraction * circumference;
-            const offset = -cumulative * circumference;
-            cumulative += fraction;
-            const isHover = hoverIndex === i;
-            return (
-              <circle
-                key={d.name}
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={d.color ?? DONUT_COLORS[i % DONUT_COLORS.length]}
-                strokeWidth={isHover ? stroke + 4 : stroke}
-                strokeDasharray={`${dash} ${circumference - dash}`}
-                strokeDashoffset={offset}
-                transform={`rotate(-90 ${center} ${center})`}
-                className="t-std cursor-pointer"
-                onMouseEnter={() => setHoverIndex(i)}
-                onMouseLeave={() => setHoverIndex((prev) => (prev === i ? null : prev))}
-              />
-            );
-          })}
-        </svg>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          {hoverIndex !== null ? (
-            <>
-              <span className="text-[0.68rem] font-extrabold text-black/60">{data[hoverIndex].name}</span>
-              <span className="text-[0.95rem] font-black text-black">
-                {data[hoverIndex].value.toLocaleString("fr-FR")} {unitLabel}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-[0.68rem] font-extrabold text-black/60">Total</span>
-              <span className="text-[0.95rem] font-black text-black">
-                {total.toLocaleString("fr-FR")} {unitLabel}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        {data.map((d, i) => (
-          <div
-            key={d.name}
-            className={`t-std flex items-center justify-between gap-2 rounded-r2 px-2 py-1.5 ${hoverIndex === i ? "bg-surface2" : ""}`}
-            onMouseEnter={() => setHoverIndex(i)}
-            onMouseLeave={() => setHoverIndex((prev) => (prev === i ? null : prev))}
-          >
-            <span className="flex min-w-0 items-center gap-1.5 truncate text-[0.72rem] font-bold text-black/70">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color ?? DONUT_COLORS[i % DONUT_COLORS.length] }} />
-              <span className="truncate">{d.name}</span>
-            </span>
-            <span className="shrink-0 text-[0.72rem] font-extrabold text-black">{Math.round((d.value / total) * 100)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LineChart({ labels, values, unitLabel = "" }: { labels: string[]; values: number[]; unitLabel?: string }) {
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const width = 560;
-  const height = 160;
-  const padding = 24;
-  const max = Math.max(1, ...values);
-  const min = Math.min(0, ...values);
-  const range = Math.max(1, max - min);
-  const stepX = values.length > 1 ? (width - padding * 2) / (values.length - 1) : 0;
-  const points = values.map((v, i) => ({
-    x: padding + i * stepX,
-    y: height - padding - ((v - min) / range) * (height - padding * 2),
-  }));
-  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const areaD = `${pathD} L ${points[points.length - 1]?.x ?? padding} ${height - padding} L ${padding} ${height - padding} Z`;
-
-  return (
-    <div className="relative w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ minWidth: 320 }}>
-        <defs>
-          <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="var(--blue)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0.25, 0.5, 0.75].map((f) => (
-          <line key={f} x1={padding} x2={width - padding} y1={padding + f * (height - padding * 2)} y2={padding + f * (height - padding * 2)} stroke="var(--border)" strokeWidth={1} />
-        ))}
-        <path d={areaD} fill="url(#lineFill)" />
-        <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="t-std" />
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={hoverIndex === i ? 6 : 4}
-              fill="var(--surface)"
-              stroke="var(--blue)"
-              strokeWidth={2.5}
-              className="t-std cursor-pointer"
-              onMouseEnter={() => setHoverIndex(i)}
-              onMouseLeave={() => setHoverIndex((prev) => (prev === i ? null : prev))}
-            />
-            <rect x={p.x - stepX / 2} y={0} width={Math.max(stepX, 1)} height={height} fill="transparent" onMouseEnter={() => setHoverIndex(i)} onMouseLeave={() => setHoverIndex((prev) => (prev === i ? null : prev))} className="cursor-pointer" />
-            {hoverIndex === i && (
-              <g>
-                <rect x={Math.min(Math.max(p.x - 30, 0), width - 60)} y={Math.max(p.y - 34, 0)} width={60} height={24} rx={6} fill="black" />
-                <text x={Math.min(Math.max(p.x, 30), width - 30)} y={Math.max(p.y - 34, 0) + 16} textAnchor="middle" fontSize={11} fontWeight={800} fill="white">
-                  {values[i]}
-                  {unitLabel}
-                </text>
-              </g>
-            )}
-          </g>
-        ))}
-        {labels.map((label, i) => (
-          <text key={label + i} x={points[i]?.x ?? 0} y={height - 4} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--text3)">
-            {label}
-          </text>
-        ))}
-      </svg>
-    </div>
-  );
-}
-
 function TrendBadge({ deltaPercent }: { deltaPercent: number }) {
   const up = deltaPercent >= 0;
   const Icon = up ? ArrowUpCircle : ArrowDownCircle;
@@ -560,7 +410,6 @@ const navItems: Array<{ key: SectionKey; label: string; icon: React.ElementType 
   { key: "categories", label: "Catégories & Matériel", icon: Tags },
   { key: "alertes", label: "Alertes stock", icon: BellRing },
   { key: "expirations", label: "Expirations", icon: Clock3 },
-  { key: "analyses", label: "Analyses", icon: BarChart3 },
   { key: "fournisseurs", label: "Fournisseurs", icon: Truck },
   { key: "entrees", label: "Entrées", icon: PackagePlus },
   { key: "sorties", label: "Sorties", icon: PackageMinus },
@@ -569,10 +418,10 @@ const navItems: Array<{ key: SectionKey; label: string; icon: React.ElementType 
 /* Images (photos fournies par l'utilisateur, converties en base64) pour les catégories et articles */
 const IMG = {
   DAIRY: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAFNAfQDASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAIDBAEFBgf/xABBEAACAgECAwQGBwcDAwUBAAAAAQIDEQQhBRIxE0FRYSIycYGR0QYUI0JSkqEVM1NUYnLBJDSxguHxJUODk7Lw/8QAGQEBAQEBAQEAAAAAAAAAAAAAAAECAwQF/8QAJhEBAQACAgICAQQDAQAAAAAAAAECEQMhEhMxQVEEImEUUjJxgZH/2gAMAwEAAhEDEQA/APfxc6wZzYNTGXt5t1qNsg5eKF9jYQaVAg+qxrgYjKQxdWXfP1zR6itVBEHIY/8Ax//Z",
-  GROCERY_SHELF: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAFNAfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQYDBAECBwAI/8QATBAAAgEDAwEGAwQIBAUCBAQHAQIDAAQRBRIhMQYTQVFhFCJxkTKBkqHRFSNCUmKD0uEHFrHB8CQzYzRygvEXQ3SzJTVTZKKys3P/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIDAAECBAQFBAMAAAAAAAECAwQRIQUSMRNBUSJhcYEUFTKRoUJSscHR8CP/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
+  GROCERY_SHELF: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAFNAfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQYDBAECBwAI/8QATBAAAgEDAwEGAwQIBAUCBAQHAQIDAAQRBRIhMQYTQVFhFCJxkTKBkqHRFSNCUmKD0uEHFrHB8CQzYzRygvEXQ3SzJTVTZKKys3P/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIDAAECBAQFBAMAAAAAAAECAwQRIQUSMRNBUSJhcYEUFTKRoUJSscHR8CX/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
   RAW_MEAT: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAFNAfQDASIAAhEBAxEB/8QAGwAAAQUBAQAAAAAAAAAAAAAABAECAwUGAAf/xAA+EAACAQMDAgUFBgUDBAMBAQABAgMABBESITEFQRMiUWFxBjKBkaGxFCNCUpGx0RVCUpKxQ2LB4RYzcoLwJTVTouLxCP/EABkBAAMBAQEAAAAAAAAAAAAAAAABAgMEBf/EACERAQEBAAICAgMBAQAAAAAAAAABAhESITEDQRMiUWFx/9oADAMBAAIRAxEAPwD9ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
-  VEG_SHELF: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAF3AfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQACAwQGAQcI/8QAURAAAgEDAwEGAwQIBAUCBAQHAQIDAAQRBRIhMQYTQVFhFCJxkTKBkqHRFSNCUlNTVGKSscHR8CQzYzRygvEXQ3SzJTVTZKKys3P/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIBAwIEBQEIAwAAAAAAAAECEQMSITEEQRMiUWEFFDJxgUKR0eHwFSNSU/H/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
-  TOMATOES: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAKaAfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQYDBAECBwAI/8QAQRAAAgEDAwIEBQIFAwQDAAAAAQIDAAQRBRIhMQYTQVFhInGBkaGxFDLwFSNCwdHhFlJi8QcXcpKisiQzguL/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIDAAECBAQFBAMAAAAAAAECAwQRIQUSMRNBUSJhcYEUFTKRoUJSscHR8CP/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
+  VEG_SHELF: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAF3AfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQACAwQGAQcI/8QAURAAAgEDAwEGAwQIBAUCBAQHAQIDAAQRBRIhMQYTQVFhFCJxkTKBkqHRFSNCUlNTVGKSscHR8CQzYzRygvEXQ3SzJTVTZKKys3P/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIBAwIEBQEIAwAAAAAAAAECEQMSITEEQRMiUWEFFDJxgUKR0eHwFSNSU/H/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
+  TOMATOES: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAKaAfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABQYDBAECBwAI/8QAQRAAAgEDAwIEBQIFAwQDAAAAAQIDAAQRBRIhMQYTQVFhInGBkaGxFDLwFSNCwdHhFlJi8QcXcpKisiQzguL/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QAMREAAgIDAAECBAQFBAMAAAAAAAECAwQRIQUSMRNBUSJhcYEUFTKRoUJSscHR8CP/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
   FARINE: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAH0AfQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABAUDBgcCAQAI/8QAQhAAAQMDAgQEAwUFBQcFAAAAAQIDBAAFEQYhEjFBUQcTImEUcYEjMpGh0RVCUpKxQ2LB4RYzcoLwJTVTouLxCP/EABkBAAMBAQEAAAAAAAAAAAAAAAABAgMEBf/EACERAQEBAAICAgMBAQAAAAAAAAABAhESITEDQRMiUWFx/9oADAMBAAIRAxEAPwD9ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
   HUILE: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAJnAfQDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAQIDBgcI/8QASxAAAgEDAwEGAwQIBAUCBAQHAQIDAAQRBRIhMQYTQVFhFCJxkTKBkqHRFSNCUlNTVGKSscHR8CQzYzSCJUNykqIWo7Kz0uHwFyb/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAgQFAwYB/8QANREAAgIBAwIEBQIFAwYAAAAAAAECAwQRIQUSMRNBUSJhcYEUFTKRoUJSscHR8CP/2gAMAwEAAhEDEQA/AP34AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
   CHICKEN: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAKHAfQDASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAIDBAEFBgf/xAA3EAACAgEDAwMDAgMAAQMCBwAAAQIDBBEFEiExBkFREyJhcRSBkQcVI6EyQlLB0eAkYnL/xAAYAQEBAQEBAAAAAAAAAAAAAAAAAQIDBP/EACERAQEBAAICAgMBAQAAAAAAAAABAhESITEDQRMiUWFx/9oADAMBAAIRAxEAPwD9ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=",
@@ -587,12 +436,6 @@ const CATEGORY_IMAGES: Record<string, string> = {
 const DEFAULT_CATEGORY_IMAGE = IMG.GROCERY_SHELF;
 
 const ZONES = ["Cuisine", "Salle", "Cafétéria", "Terrasse"];
-
-const consumptionData: Record<AnalysesPeriod, { labels: string[]; values: number[]; totalLabel: string; total: string }> = {
-  jour: { labels: ["08h", "10h", "12h", "14h", "16h", "18h", "20h"], values: [30, 55, 90, 65, 40, 78, 92], totalLabel: "Consommation du jour", total: "18.4 kg" },
-  semaine: { labels: ["L", "M", "M", "J", "V", "S", "D"], values: [62, 74, 55, 88, 95, 100, 82], totalLabel: "Consommation de la semaine", total: "126 kg" },
-  mois: { labels: ["S1", "S2", "S3", "S4"], values: [70, 85, 60, 95], totalLabel: "Consommation du mois", total: "512 kg" },
-};
 
 /* Estimation du prix unitaire par catégorie, utilisée uniquement pour l'affichage
    de la "valeur à risque" dans la section Expirations (donnée non stockée ailleurs). */
@@ -662,7 +505,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("Toutes catégories");
-  const [analysesPeriod, setAnalysesPeriod] = useState<AnalysesPeriod>("semaine");
   const [docPreview, setDocPreview] = useState<{ name: string; url: string } | null>(null);
   const [categoriesTab, setCategoriesTab] = useState<"categories" | "materiel">("categories");
   const [sortiesTab, setSortiesTab] = useState<"tous" | "article" | "materiel">("tous");
@@ -671,6 +513,9 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [denseMode, setDenseMode] = useState(false);
   const [articlesView, setArticlesView] = useState<"grid" | "list">("grid");
+  const [categoriesView, setCategoriesView] = useState<"grid" | "list">("grid");
+  const [materielView, setMaterielView] = useState<"grid" | "list">("grid");
+  const [suppliersView, setSuppliersView] = useState<"grid" | "list">("grid");
   const [exportModal, setExportModal] = useState<{ scope: "entrees" | "sorties" } | null>(null);
   const [exportFrom, setExportFrom] = useState("");
   const [exportTo, setExportTo] = useState("");
@@ -758,19 +603,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     return equipment.filter((eq) => equipmentTypeFilter === "Tous les types" || eq.type === equipmentTypeFilter);
   }, [equipment, equipmentTypeFilter]);
 
-  const mostConsumed = [
-    ["Poulet entier", "8.5 kg"],
-    ["Tomates fraîches", "6.2 kg"],
-    ["Huile de tournesol", "4.1 L"],
-    ["Farine T55", "3.8 kg"],
-  ];
-  const leastConsumed = [
-    ["Vinaigre blanc", "0.3 L"],
-    ["Clous de girofle", "0.1 kg"],
-    ["Sel fin", "0.6 kg"],
-    ["Levure boulangère", "0.2 kg"],
-  ];
-
   /* ------------------------------------------------------------------ */
   /* Dashboard — visuels agrégés                                         */
   /* ------------------------------------------------------------------ */
@@ -788,7 +620,7 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
   );
   const maxCategoryCount = Math.max(1, ...categoryBreakdown.map((c) => c.count));
 
-  /* Valeur du stock par catégorie — utilisée pour l'unique graphe du tableau de bord */
+  /* Valeur du stock par catégorie — utilisée pour la carte KPI "Valeur totale du stock" */
   const stockValueByCategory = useMemo(
     () =>
       categories.map((cat) => {
@@ -1284,68 +1116,49 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
   };
 
   const renderDashboard = () => {
-    const stockStatusData = [
-      { name: "Bon", value: stockStatusCounts.bon, color: "var(--green)" },
-      { name: "Alerte", value: stockStatusCounts.alerte, color: "var(--orange)" },
-      { name: "Rupture", value: stockStatusCounts.rupture, color: "var(--red)" },
-    ];
-    const donutData = stockValueByCategory.map(cat => ({ name: cat.name, value: Math.round(cat.totalValue) }));
-
     return (
       <div className="space-y-5">
-        {/* Infos importantes en avant */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="t-card rounded-r3 border border-border bg-surface p-4 shadow-card hover:shadow-modal hover:-translate-y-0.5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--blue-soft)] text-blue">
+        {/* Infos importantes en avant — cartes horizontales, toujours alignées sur une seule ligne */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          <div className="t-card flex items-center gap-2 rounded-r3 border border-border bg-surface px-3 py-3 shadow-card hover:shadow-modal hover:-translate-y-0.5 sm:gap-3 sm:px-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--blue-soft)] text-blue">
               <Package size={18} />
             </div>
-            <p className="text-[1.35rem] font-black text-black">{items.length}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[0.8rem] font-extrabold text-black">Articles en stock</p>
+            <div className="min-w-0">
+              <p className="text-[1.2rem] font-black leading-tight text-black">{items.length}</p>
+              <p className="truncate text-[0.78rem] font-extrabold text-black">Articles en stock</p>
               <TrendBadge deltaPercent={dashboardTrends.items} />
             </div>
           </div>
-          <div className="t-card rounded-r3 border border-[var(--red-border)] bg-[var(--red-soft)] p-4 shadow-card hover:shadow-modal hover:-translate-y-0.5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--red-soft)] text-[var(--red)]">
+          <div className="t-card flex items-center gap-2 rounded-r3 border border-[var(--red-border)] bg-[var(--red-soft)] px-3 py-3 shadow-card hover:shadow-modal hover:-translate-y-0.5 sm:gap-3 sm:px-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--red-soft)] text-[var(--red)]">
               <AlertTriangle size={18} />
             </div>
-            <p className="text-[1.35rem] font-black text-black">{ruptureItems.length}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[0.8rem] font-extrabold text-black">Ruptures de stock</p>
+            <div className="min-w-0">
+              <p className="text-[1.2rem] font-black leading-tight text-black">{ruptureItems.length}</p>
+              <p className="truncate text-[0.78rem] font-extrabold text-black">Ruptures de stock</p>
               <TrendBadge deltaPercent={dashboardTrends.ruptures} />
             </div>
           </div>
-          <div className="t-card rounded-r3 border border-[var(--orange-border)] bg-[var(--orange-soft)] p-4 shadow-card hover:shadow-modal hover:-translate-y-0.5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--orange-soft)] text-[var(--orange)]">
+          <div className="t-card flex items-center gap-2 rounded-r3 border border-[var(--orange-border)] bg-[var(--orange-soft)] px-3 py-3 shadow-card hover:shadow-modal hover:-translate-y-0.5 sm:gap-3 sm:px-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--orange-soft)] text-[var(--orange)]">
               <BellRing size={18} />
             </div>
-            <p className="text-[1.35rem] font-black text-black">{alertCount}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[0.8rem] font-extrabold text-black">Proches du seuil</p>
+            <div className="min-w-0">
+              <p className="text-[1.2rem] font-black leading-tight text-black">{alertCount}</p>
+              <p className="truncate text-[0.78rem] font-extrabold text-black">Proches du seuil</p>
               <TrendBadge deltaPercent={dashboardTrends.alertes} />
             </div>
           </div>
-          <div className="t-card rounded-r3 border border-[var(--green-soft)] bg-[var(--green-soft)] p-4 shadow-card hover:shadow-modal hover:-translate-y-0.5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--green-soft)] text-[var(--green)]">
+          <div className="t-card flex items-center gap-2 rounded-r3 border border-[var(--green-soft)] bg-[var(--green-soft)] px-3 py-3 shadow-card hover:shadow-modal hover:-translate-y-0.5 sm:gap-3 sm:px-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--green-soft)] text-[var(--green)]">
               <TrendingUp size={18} />
             </div>
-            <p className="text-[1.35rem] font-black text-[var(--green)]">{totalStockValue.toLocaleString("fr-FR")} DA</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[0.8rem] font-extrabold text-black">Valeur totale du stock</p>
+            <div className="min-w-0">
+              <p className="text-[1.2rem] font-black leading-tight text-black">{totalStockValue.toLocaleString("fr-FR")} DA</p>
+              <p className="truncate text-[0.78rem] font-extrabold text-black">Valeur totale du stock</p>
               <TrendBadge deltaPercent={dashboardTrends.value} />
             </div>
-          </div>
-        </div>
-
-        {/* Graphiques : camembert pour valeur stock, statut stock, etc. */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="t-card rounded-r3 border border-border bg-surface p-4 shadow-card hover:shadow-modal">
-            <h2 className="mb-2 text-[0.9rem] font-black text-black">Répartition de la valeur du stock</h2>
-            <DonutChart data={donutData} unitLabel="DA" />
-          </div>
-          <div className="t-card rounded-r3 border border-border bg-surface p-4 shadow-card hover:shadow-modal">
-            <h2 className="mb-2 text-[0.9rem] font-black text-black">État du stock</h2>
-            <DonutChart data={stockStatusData} unitLabel="articles" />
           </div>
         </div>
 
@@ -1713,31 +1526,81 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     );
   };
 
+  const ViewToggle = ({ view, onChange }: { view: "grid" | "list"; onChange: (v: "grid" | "list") => void }) => (
+    <div className="flex gap-1 rounded-r2 border border-border bg-surface2 p-1">
+      <button
+        onClick={() => onChange("grid")}
+        className={`t-std rounded-r2 px-2 py-1.5 ${view === "grid" ? "bg-blue text-black" : "text-black/60 hover:text-blue"}`}
+        title="Vue grille"
+      >
+        <LayoutGrid size={16} />
+      </button>
+      <button
+        onClick={() => onChange("list")}
+        className={`t-std rounded-r2 px-2 py-1.5 ${view === "list" ? "bg-blue text-black" : "text-black/60 hover:text-blue"}`}
+        title="Vue liste"
+      >
+        <List size={16} />
+      </button>
+    </div>
+  );
+
   const renderCategoriesTabBlock = () => (
     <div className="flex flex-col items-start gap-5 xl:flex-row">
       <div className="t-card w-full min-w-0 flex-1 rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[1rem] font-black text-black">Catégories</h2>
-          <PrimaryButton onClick={() => { setCategoryImage(null); setCategoryModal({ mode: "create" }); }}>
-            <Plus size={16} /> Nouvelle catégorie
-          </PrimaryButton>
+          <div className="flex items-center gap-2">
+            <ViewToggle view={categoriesView} onChange={setCategoriesView} />
+            <PrimaryButton onClick={() => { setCategoryImage(null); setCategoryModal({ mode: "create" }); }}>
+              <Plus size={16} /> Nouvelle catégorie
+            </PrimaryButton>
+          </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {categories.map((category) => (
-            <div key={category.id} className="t-std overflow-hidden rounded-r2 border border-border bg-surface2 hover:-translate-y-0.5 hover:border-blue hover:shadow-card">
-              <div className="h-44 w-full overflow-hidden bg-surface3">
-                <img
-                  src={category.image || CATEGORY_IMAGES[category.name] || DEFAULT_CATEGORY_IMAGE}
-                  alt={category.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="flex items-center justify-between px-3 py-2.5">
-                <div>
-                  <p className="font-extrabold text-black">{category.name}</p>
-                  <p className="text-[0.78rem] text-black/60">{items.filter((i) => i.category === category.name).length} articles</p>
+        {categoriesView === "grid" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {categories.map((category) => (
+              <div key={category.id} className="t-std overflow-hidden rounded-r2 border border-border bg-surface2 hover:-translate-y-0.5 hover:border-blue hover:shadow-card">
+                <div className="h-44 w-full overflow-hidden bg-surface3">
+                  <img
+                    src={category.image || CATEGORY_IMAGES[category.name] || DEFAULT_CATEGORY_IMAGE}
+                    alt={category.name}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <div>
+                    <p className="font-extrabold text-black">{category.name}</p>
+                    <p className="text-[0.78rem] text-black/60">{items.filter((i) => i.category === category.name).length} articles</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="t-std rounded-r2 border border-border p-2 hover:border-blue hover:text-blue" onClick={() => { setCategoryImage(category.image ?? null); setCategoryModal({ mode: "edit", item: category }); }}>
+                      <Pencil size={15} />
+                    </button>
+                    <button className="t-std rounded-r2 border border-[var(--red-border)] p-2 text-[var(--red)] hover:bg-[var(--red)] hover:text-black" onClick={() => deleteCategory(category)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {categories.map((category) => (
+              <div key={category.id} className="t-std flex items-center justify-between gap-3 rounded-r2 border border-border bg-surface2 px-3 py-2.5 hover:border-blue hover:shadow-card">
+                <div className="flex min-w-0 items-center gap-3">
+                  <img
+                    src={category.image || CATEGORY_IMAGES[category.name] || DEFAULT_CATEGORY_IMAGE}
+                    alt={category.name}
+                    className="h-11 w-11 shrink-0 rounded-r2 object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-black">{category.name}</p>
+                    <p className="text-[0.78rem] text-black/60">{items.filter((i) => i.category === category.name).length} articles</p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
                   <button className="t-std rounded-r2 border border-border p-2 hover:border-blue hover:text-blue" onClick={() => { setCategoryImage(category.image ?? null); setCategoryModal({ mode: "edit", item: category }); }}>
                     <Pencil size={15} />
                   </button>
@@ -1746,9 +1609,9 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div
@@ -1824,9 +1687,12 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
             <p className="text-[0.8rem] text-black/60">Vaisselle, couverts, ustensiles et électroménager — indépendant du stock alimentaire.</p>
           </div>
         </div>
-        <PrimaryButton onClick={() => setEquipmentModal({ mode: "create" })}>
-          <Plus size={16} /> Nouveau matériel
-        </PrimaryButton>
+        <div className="flex items-center gap-2">
+          <ViewToggle view={materielView} onChange={setMaterielView} />
+          <PrimaryButton onClick={() => setEquipmentModal({ mode: "create" })}>
+            <Plus size={16} /> Nouveau matériel
+          </PrimaryButton>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -1847,41 +1713,74 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
         })}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filteredEquipment.map((eq) => {
-          const EqIcon = equipmentTypeIcon(eq.type);
-          return (
-          <div key={eq.id} className="t-std rounded-r2 border border-border bg-surface2 p-4 hover:-translate-y-0.5 hover:border-blue hover:shadow-card">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--purple-soft)] text-[var(--purple)]">
-                <EqIcon size={18} />
+      {materielView === "grid" ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredEquipment.map((eq) => {
+            const EqIcon = equipmentTypeIcon(eq.type);
+            return (
+            <div key={eq.id} className="t-std rounded-r2 border border-border bg-surface2 p-4 hover:-translate-y-0.5 hover:border-blue hover:shadow-card">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--purple-soft)] text-[var(--purple)]">
+                  <EqIcon size={18} />
+                </div>
+                <Badge color={equipmentConditionColor(eq.condition)}>{eq.condition}</Badge>
               </div>
-              <Badge color={equipmentConditionColor(eq.condition)}>{eq.condition}</Badge>
+              <p className="font-extrabold text-black">{eq.name}</p>
+              <p className="mb-3 text-[0.78rem] font-bold text-black/60">{eq.type}</p>
+              <div className="flex items-center justify-between text-[0.82rem]">
+                <span className="font-bold text-black">Quantité</span>
+                <span className="font-extrabold text-black">{eq.quantity}</span>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <SecondaryButton className="flex-1" onClick={() => setEquipmentModal({ mode: "edit", item: eq })}>
+                  <Pencil size={15} /> Modifier
+                </SecondaryButton>
+                <button
+                  className="t-std rounded-r2 border border-[var(--red-border)] px-3 py-2 text-[var(--red)] hover:bg-[var(--red)] hover:text-black"
+                  onClick={() => deleteEquipment(eq)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
-            <p className="font-extrabold text-black">{eq.name}</p>
-            <p className="mb-3 text-[0.78rem] font-bold text-black/60">{eq.type}</p>
-            <div className="flex items-center justify-between text-[0.82rem]">
-              <span className="font-bold text-black">Quantité</span>
-              <span className="font-extrabold text-black">{eq.quantity}</span>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <SecondaryButton className="flex-1" onClick={() => setEquipmentModal({ mode: "edit", item: eq })}>
-                <Pencil size={15} /> Modifier
-              </SecondaryButton>
-              <button
-                className="t-std rounded-r2 border border-[var(--red-border)] px-3 py-2 text-[var(--red)] hover:bg-[var(--red)] hover:text-black"
-                onClick={() => deleteEquipment(eq)}
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          </div>
-          );
-        })}
-        {filteredEquipment.length === 0 && (
-          <p className="col-span-full py-6 text-center font-bold text-black/50">Aucun matériel ne correspond à ce filtre.</p>
-        )}
-      </div>
+            );
+          })}
+          {filteredEquipment.length === 0 && (
+            <p className="col-span-full py-6 text-center font-bold text-black/50">Aucun matériel ne correspond à ce filtre.</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredEquipment.map((eq) => {
+            const EqIcon = equipmentTypeIcon(eq.type);
+            return (
+              <div key={eq.id} className="t-std flex items-center justify-between gap-3 rounded-r2 border border-border bg-surface2 px-3 py-2.5 hover:border-blue hover:shadow-card">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--purple-soft)] text-[var(--purple)]">
+                    <EqIcon size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-black">{eq.name}</p>
+                    <p className="text-[0.78rem] text-black/60">{eq.type} • Quantité : {eq.quantity}</p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge color={equipmentConditionColor(eq.condition)}>{eq.condition}</Badge>
+                  <button className="t-std rounded-r2 border border-border p-2 hover:border-blue hover:text-blue" onClick={() => setEquipmentModal({ mode: "edit", item: eq })}>
+                    <Pencil size={15} />
+                  </button>
+                  <button className="t-std rounded-r2 border border-[var(--red-border)] p-2 text-[var(--red)] hover:bg-[var(--red)] hover:text-black" onClick={() => deleteEquipment(eq)}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredEquipment.length === 0 && (
+            <p className="py-6 text-center font-bold text-black/50">Aucun matériel ne correspond à ce filtre.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -2144,104 +2043,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     );
   };
 
-  const renderAnalyses = () => {
-    const data = consumptionData[analysesPeriod];
-    const wasteData = wasteByCategory.length ? wasteByCategory : [{ name: "Aucune perte", value: 0 }];
-
-    return (
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { value: data.total, label: data.totalLabel, tone: "border-border bg-surface", color: "text-black" },
-            { value: "12", label: "Sorties effectuées", tone: "border-border bg-surface", color: "text-black" },
-            { value: "3", label: "Pertes détectées", tone: "border-[var(--red-border)] bg-[var(--red-soft)]", color: "text-[var(--red)]" },
-            { value: "97%", label: "Disponibilité", tone: "border-border bg-surface", color: "text-black" },
-          ].map((stat) => (
-            <div key={stat.label} className={`t-card rounded-r3 border p-4 shadow-card hover:shadow-modal hover:-translate-y-0.5 ${stat.tone}`}>
-              <p className={`text-[1.2rem] font-black ${stat.color}`}>{stat.value}</p>
-              <p className="text-[0.8rem] text-black/60">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-            <h2 className="mb-4 text-[1rem] font-black text-black">Évolution de la consommation</h2>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex gap-1 rounded-r2 border border-border bg-surface2 p-1">
-                {(["jour", "semaine", "mois"] as AnalysesPeriod[]).map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setAnalysesPeriod(period)}
-                    className={`t-std rounded-r2 px-3 py-1.5 text-[0.78rem] font-extrabold capitalize ${analysesPeriod === period ? "bg-blue text-black" : "text-black/60 hover:text-black"}`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <LineChart labels={data.labels} values={data.values} unitLabel="" />
-          </div>
-
-          <div className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-            <h2 className="mb-4 text-[1rem] font-black text-black">Pertes par catégorie (valeur)</h2>
-            <DonutChart data={wasteData} unitLabel="DA" />
-          </div>
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-2">
-          <div className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-            <div className="mb-4 flex items-center gap-2">
-              <TrendingUp size={16} className="text-blue" />
-              <h2 className="text-[1rem] font-black text-black">Produits les plus consommés</h2>
-            </div>
-            <div className="space-y-2">
-              {mostConsumed.map(([name, value]) => (
-                <div key={name} className="t-std flex items-center justify-between rounded-r2 bg-surface2 px-3 py-3 hover:bg-[var(--blue-soft)]">
-                  <span className="font-semibold text-black">{name}</span>
-                  <span className="font-extrabold text-[var(--blue)]">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-            <div className="mb-4 flex items-center gap-2">
-              <TrendingDown size={16} className="text-black/50" />
-              <h2 className="text-[1rem] font-black text-black">Produits les moins consommés</h2>
-            </div>
-            <div className="space-y-2">
-              {leastConsumed.map(([name, value]) => (
-                <div key={name} className="t-std flex items-center justify-between rounded-r2 bg-surface2 px-3 py-3 hover:bg-surface3">
-                  <span className="font-semibold text-black">{name}</span>
-                  <span className="font-extrabold text-black/60">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal">
-          <h2 className="mb-4 text-[1rem] font-black text-black">Pertes & anomalies</h2>
-          <div className="space-y-2">
-            {[
-              ["Lait frais", "2 L", "Expiration"],
-              ["Tomates fraîches", "1.5 kg", "Avarie"],
-              ["Poulet entier", "0.8 kg", "Inventaire"],
-            ].map(([name, qty, reason]) => (
-              <div key={name} className="t-std rounded-r2 border border-[var(--red-border)] bg-[var(--red-soft)] px-3 py-3 hover:-translate-y-0.5 hover:shadow-card">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-black">{name}</span>
-                  <span className="font-extrabold text-[var(--red)]">{qty}</span>
-                </div>
-                <p className="mt-1 text-[0.78rem] text-black/60">{reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderSuppliers = () => (
     <div className="space-y-4">
       <div className="t-card flex flex-wrap items-center justify-between gap-3 rounded-r3 border border-border bg-surface p-4 shadow-card hover:shadow-modal">
@@ -2249,50 +2050,88 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
           <h2 className="text-[1rem] font-black text-black">Fournisseurs</h2>
           <p className="text-[0.8rem] text-black/60">Gérez vos partenaires et leurs coordonnées complètes.</p>
         </div>
-        <PrimaryButton onClick={() => setSupplierModal({ mode: "create" })}>
-          <Plus size={16} /> Ajouter un fournisseur
-        </PrimaryButton>
+        <div className="flex items-center gap-2">
+          <ViewToggle view={suppliersView} onChange={setSuppliersView} />
+          <PrimaryButton onClick={() => setSupplierModal({ mode: "create" })}>
+            <Plus size={16} /> Ajouter un fournisseur
+          </PrimaryButton>
+        </div>
       </div>
-      <div className="grid gap-4 xl:grid-cols-3">
-        {suppliers.map((supplier) => {
-          const color = supplierColor(supplier.name);
-          return (
-            <div key={supplier.id} className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal hover:-translate-y-0.5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full text-lg font-black text-white" style={{ backgroundColor: color }}>
-                  {supplier.name.charAt(0)}
+      {suppliersView === "grid" ? (
+        <div className="grid gap-4 xl:grid-cols-3">
+          {suppliers.map((supplier) => {
+            const color = supplierColor(supplier.name);
+            return (
+              <div key={supplier.id} className="t-card rounded-r3 border border-border bg-surface p-5 shadow-card hover:shadow-modal hover:-translate-y-0.5">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full text-lg font-black text-white" style={{ backgroundColor: color }}>
+                    {supplier.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-black">{supplier.name}</p>
+                    <p className="text-[0.78rem] font-bold text-black">{supplier.city}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-extrabold text-black">{supplier.name}</p>
-                  <p className="text-[0.78rem] font-bold text-black">{supplier.city}</p>
+                <div className="space-y-1.5 text-[0.85rem] font-bold text-black">
+                  <p className="flex items-center gap-2">
+                    <Phone size={14} /> {supplier.phone}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <User size={14} /> {supplier.contact}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <Mail size={14} /> {supplier.email || "—"}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <MapPin size={14} /> {supplier.address || supplier.city}
+                  </p>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <SecondaryButton className="flex-1" onClick={() => setSupplierModal({ mode: "edit", item: supplier })}>
+                    Modifier
+                  </SecondaryButton>
+                  <button className="t-std rounded-r2 border border-[var(--red-border)] px-3 py-2 text-[0.8rem] font-extrabold text-[var(--red)] hover:bg-[var(--red)] hover:text-black" onClick={() => deleteSupplier(supplier)}>
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
-              <div className="space-y-1.5 text-[0.85rem] font-bold text-black">
-                <p className="flex items-center gap-2">
-                  <Phone size={14} /> {supplier.phone}
-                </p>
-                <p className="flex items-center gap-2">
-                  <User size={14} /> {supplier.contact}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Mail size={14} /> {supplier.email || "—"}
-                </p>
-                <p className="flex items-center gap-2">
-                  <MapPin size={14} /> {supplier.address || supplier.city}
-                </p>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <SecondaryButton className="flex-1" onClick={() => setSupplierModal({ mode: "edit", item: supplier })}>
-                  Modifier
-                </SecondaryButton>
-                <button className="t-std rounded-r2 border border-[var(--red-border)] px-3 py-2 text-[0.8rem] font-extrabold text-[var(--red)] hover:bg-[var(--red)] hover:text-black" onClick={() => deleteSupplier(supplier)}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="t-card rounded-r3 border border-border bg-surface p-2 shadow-card hover:shadow-modal">
+          <div className="space-y-2">
+            {suppliers.map((supplier) => {
+              const color = supplierColor(supplier.name);
+              return (
+                <div key={supplier.id} className="t-std flex flex-wrap items-center justify-between gap-3 rounded-r2 border border-border bg-surface2 px-3 py-2.5 hover:border-blue hover:shadow-card">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[0.95rem] font-black text-white" style={{ backgroundColor: color }}>
+                      {supplier.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-extrabold text-black">{supplier.name}</p>
+                      <p className="text-[0.78rem] text-black/60">{supplier.city} • {supplier.contact}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[0.78rem] font-bold text-black/70">
+                    <span className="flex items-center gap-1"><Phone size={13} /> {supplier.phone}</span>
+                    <span className="hidden items-center gap-1 sm:flex"><Mail size={13} /> {supplier.email || "—"}</span>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button className="t-std rounded-r2 border border-border p-2 hover:border-blue hover:text-blue" onClick={() => setSupplierModal({ mode: "edit", item: supplier })}>
+                      <Pencil size={15} />
+                    </button>
+                    <button className="t-std rounded-r2 border border-[var(--red-border)] p-2 text-[var(--red)] hover:bg-[var(--red)] hover:text-black" onClick={() => deleteSupplier(supplier)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -2424,20 +2263,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     win.focus();
     win.print();
   };
-
-  /* Pertes par catégorie — pour le graphique dédié dans Analyses */
-  const wasteByCategory = useMemo(() => {
-    const wasteMock: { name: string; category: string; qty: number }[] = [
-      { name: "Lait frais", category: "Produits laitiers", qty: 2 },
-      { name: "Tomates fraîches", category: "Légumes", qty: 1.5 },
-      { name: "Poulet entier", category: "Viandes", qty: 0.8 },
-    ];
-    const byCategory: Record<string, number> = {};
-    wasteMock.forEach((w) => {
-      byCategory[w.category] = (byCategory[w.category] ?? 0) + w.qty * estimateUnitPrice(w.category);
-    });
-    return Object.entries(byCategory).map(([name, value]) => ({ name, value: Math.round(value) }));
-  }, []);
 
   /* Tendances (mock, comparaison à la semaine dernière) affichées sur le tableau de bord */
   const dashboardTrends = {
@@ -2683,7 +2508,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     categories: "Catégories & Matériel",
     alertes: "Alertes stock",
     expirations: "Suivi des expirations proches",
-    analyses: "Analyses",
     fournisseurs: "Fournisseurs",
     entrees: "Entrées de stock",
     sorties: "Sorties de stock",
@@ -2695,7 +2519,6 @@ export function MagasinierPage({ onBack }: { onBack: () => void }) {
     categories: renderCategories(),
     alertes: renderAlerts(),
     expirations: renderExpirations(),
-    analyses: renderAnalyses(),
     fournisseurs: renderSuppliers(),
     entrees: renderEntrees(),
     sorties: renderSorties(),

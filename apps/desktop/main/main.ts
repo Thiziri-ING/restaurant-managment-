@@ -1,74 +1,68 @@
-import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
-import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
+import { app, BrowserWindow } from 'electron';
+import path from 'path';
+import { spawn, ChildProcess } from 'child_process';
+import { setupIpcHandlers } from './ipc-handlers';
 
-async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+let mainWindow: BrowserWindow | null = null;
+let backendProcess: ChildProcess | null = null;
 
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: false }),
-  );
+const BACKEND_DIR = 'C:/Users/USER/Desktop/DEmain/restau-management-/apps/backend';
 
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3000);
-  const prefix = configService.get<string>('API_PREFIX', 'api');
-  const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3001');
-
-  // ── CORS ──────────────────────────────────────────────────
-   app.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+function startBackend() {
+  backendProcess = spawn('node', ['dist/src/main.js'], {
+    cwd: BACKEND_DIR,
+    shell: true,
+    windowsHide: true,
   });
 
-  // ── Global prefix ─────────────────────────────────────────
-  app.setGlobalPrefix(prefix);
-
-  // ── Global validation pipe ────────────────────────────────
-  // IMPORTANT : forbidNonWhitelisted = false pour permettre
-  // les query params additionnels (available, categoryId, etc.)
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: false, // corrigé : était true, bloquait les query params
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  // ── Swagger (dev only) ────────────────────────────────────
-  if (configService.get('NODE_ENV') !== 'production') {
-    const config = new DocumentBuilder()
-      .setTitle('Restaurant Manager API')
-      .setDescription('API complète pour la gestion de restaurant')
-      .setVersion('1.0')
-      .addBearerAuth(
-        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-        'access-token',
-      )
-      .build();
-
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(`${prefix}/docs`, app, document, {
-      swaggerOptions: { persistAuthorization: true },
-    });
-    logger.log(`Swagger: http://localhost:${port}/${prefix}/docs`);
-  }
-
-  await app.listen(port, '0.0.0.0');
-  logger.log(`🚀 Server running on http://localhost:${port}/${prefix}`);
+  backendProcess.stdout?.on('data', (data) => console.log(`[backend] ${data}`));
+  backendProcess.stderr?.on('data', (data) => console.error(`[backend] ${data}`));
 }
 
-bootstrap();
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  const isDev = !app.isPackaged;
+
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:3001');
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
+  }
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+}
+
+app.whenReady().then(() => {
+  startBackend();
+  setupIpcHandlers();
+
+  // Laisser le temps au backend de d�marrer avant d'afficher la fen�tre
+  setTimeout(() => {
+    createWindow();
+  }, 4000);
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (backendProcess) backendProcess.kill();
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (backendProcess) backendProcess.kill();
+});

@@ -21,6 +21,7 @@ import {
   CalendarCheck, CalendarRange, CalendarDays, ShoppingBasket, MoreHorizontal,
   Camera, Printer, Save, Upload, CircleCheck, CircleX, Layers,
   Banknote, Shield, Calculator, UserPlus, Search, Filter, Image as ImageIcon,
+  Target, Flag, Wallet,
 } from 'lucide-react';
 import { useLogout } from '@/hooks/useAuth';
 
@@ -226,7 +227,7 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-primary,
 .mgr-dashboard button.btn-primary {
   background: var(--blue);
-  color: #fff;
+  color: #000;
   border: 1.5px solid var(--blue2);
   border-radius: 9999px;
   padding: 0.65rem 1.5rem;
@@ -251,7 +252,7 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-danger,
 .mgr-dashboard button.btn-danger {
   background: var(--red);
-  color: #fff;
+  color: #000;
   border: 1.5px solid #991b1b;
   border-radius: 9999px;
   padding: 0.65rem 1.5rem;
@@ -297,7 +298,7 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .btn-warning,
 .mgr-dashboard button.btn-warning {
   background: var(--orange);
-  color: #fff;
+  color: #000;
   border: 1.5px solid #92400e;
   border-radius: 9999px;
   padding: 0.65rem 1.5rem;
@@ -722,6 +723,48 @@ const MANAGER_DASHBOARD_CSS = `
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 13px; font-weight: 800;
 }
+.mgr-dashboard .kpi-card.clickable { cursor: pointer; }
+.mgr-dashboard .kpi-card.kpi-filter-active { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft), var(--shadow-card); }
+.mgr-dashboard .kpi-card-wrap { position: relative; flex: 1; }
+.mgr-dashboard .kpi-hover-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 260px;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  box-shadow: var(--shadow-modal);
+  padding: 12px 14px;
+  z-index: 60;
+  animation: fadeIn 0.15s ease forwards;
+}
+.mgr-dashboard .kpi-hover-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #000;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.mgr-dashboard .kpi-hover-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  padding: 4px 0;
+  color: #000;
+}
+.mgr-dashboard .kpi-hover-row span:first-child { color: #000; font-weight: 700; }
+.mgr-dashboard .kpi-hover-row span:last-child { font-weight: 900; font-family: var(--mono); text-align: right; }
+.mgr-dashboard .flux-filter-btn {
+  padding: 0.85rem 1.6rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  border-radius: 9999px !important;
+}
 .mgr-dashboard .delta-up { color: var(--green); }
 .mgr-dashboard .delta-down { color: var(--red); }
 .mgr-dashboard .delta-neu { color: #000; }
@@ -731,7 +774,8 @@ const MANAGER_DASHBOARD_CSS = `
 .mgr-dashboard .charts-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .mgr-dashboard .charts-2eq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .mgr-dashboard .chart-wrap { position: relative; width: 100%; }
-.mgr-dashboard .zone-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.mgr-dashboard .zone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mgr-dashboard .full-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
 /* ----- Tables ----- */
 .mgr-dashboard .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -871,6 +915,20 @@ const MANAGER_DASHBOARD_CSS = `
   outline: none; font-family: inherit;
 }
 .mgr-dashboard .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.mgr-dashboard .topbar-search {
+  position: relative; width: 220px; flex-shrink: 0;
+}
+.mgr-dashboard .topbar-search svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: #000; pointer-events: none;
+}
+.mgr-dashboard .topbar-search input {
+  width: 100%; padding: 7px 10px 7px 32px;
+  border: 1px solid var(--border); border-radius: 9999px;
+  font-size: 15px; font-weight: 800; color: #000; background: var(--surface2);
+  outline: none; font-family: inherit;
+}
+.mgr-dashboard .topbar-search input:focus { background: var(--surface); border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
 .mgr-dashboard .filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 16px; }
 .mgr-dashboard .filter-tab {
@@ -880,7 +938,7 @@ const MANAGER_DASHBOARD_CSS = `
   border: 1px solid var(--border); background: var(--surface); color: #000;
   transition: all 0.12s;
 }
-.mgr-dashboard .filter-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; box-shadow: var(--shadow-glow); }
+.mgr-dashboard .filter-tab.active { background: var(--blue-soft); border-color: var(--blue); color: #000; box-shadow: var(--shadow-glow); }
 .mgr-dashboard .filter-tab:hover:not(.active) { border-color: var(--border2); color: #000; }
 
 .mgr-dashboard .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
@@ -1124,9 +1182,9 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Configuration',
     items: [
       { id: 'restaurant', label: 'Paramètres', icon: Settings, title: 'Paramètres Restaurant' },
-      { id: 'tables', label: 'Tables & Zones', icon: LayoutGrid, title: 'Tables & Zones' },
+      { id: 'tables', label: 'Tables', icon: LayoutGrid, title: 'Tables' },
       { id: 'users', label: 'Utilisateurs', icon: Users, title: 'Utilisateurs & Accès' },
-      { id: 'menu', label: 'Menu & Carte', icon: ClipboardList, title: 'Gestion du Menu' },
+      { id: 'menu', label: 'Menu', icon: ClipboardList, title: 'Menu' },
     ],
   },
   {
@@ -1138,7 +1196,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-const EXPORTABLE_PAGES: PageId[] = ['ca', 'commercial', 'stock'];
+const EXPORTABLE_PAGES: PageId[] = ['ca', 'commercial', 'stock', 'flux'];
 
 type Period = 'jour' | 'semaine' | 'mois' | 'personnalise';
 
@@ -1473,6 +1531,226 @@ function Modal({ title, subtitle, onClose, children, footer, width, spreadFooter
         {footer && <div className={`modal-footer${spreadFooter ? ' spread' : ''}`}>{footer}</div>}
       </div>
     </div>
+  );
+}
+
+/* ============================================================================
+ * KPI Details Modal (générique) — affiche tous les attributs d'un KPI
+ * ==========================================================================*/
+interface KpiDetailRow {
+  label: string;
+  value: string;
+  accent?: 'up' | 'down' | 'neutral';
+}
+
+interface KpiDetail {
+  title: string;
+  subtitle?: string;
+  rows: KpiDetailRow[];
+}
+
+function KpiDetailsModal({ detail, onClose }: { detail: KpiDetail; onClose: () => void }) {
+  return (
+    <Modal
+      title={detail.title}
+      subtitle={detail.subtitle}
+      onClose={onClose}
+      width="480px"
+      footer={<button className="btn-primary" onClick={onClose}>Fermer</button>}
+    >
+      <div>
+        {detail.rows.map((r, i) => (
+          <div className="stat-row" key={i}>
+            <div className="lbl">{r.label}</div>
+            <div className={`val${r.accent === 'up' ? '' : ''}`} style={{ color: r.accent === 'up' ? 'var(--green)' : r.accent === 'down' ? 'var(--red)' : undefined }}>{r.value}</div>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+/* ============================================================================
+ * KPI Details Modal v2 — cartes horizontales (design riche, consultation seule)
+ * ==========================================================================*/
+type KpiColor2 = 'blue' | 'green' | 'red' | 'orange' | 'purple';
+
+const KPI_COLOR2: Record<KpiColor2, { solid: string; soft: string; text: string }> = {
+  blue:   { solid: 'var(--blue)',   soft: 'var(--blue-soft)',   text: 'var(--blue2)' },
+  green:  { solid: 'var(--green)',  soft: 'var(--green-soft)',  text: 'var(--green)' },
+  red:    { solid: 'var(--red)',    soft: 'var(--red-soft)',    text: 'var(--red)' },
+  orange: { solid: 'var(--orange)', soft: 'var(--orange-soft)', text: 'var(--orange)' },
+  purple: { solid: '#7c3aed',       soft: '#f3e8ff',            text: '#7c3aed' },
+};
+
+interface KpiHeroCard2 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  variant: 'filled' | 'soft';
+  color: KpiColor2;
+}
+
+function KpiHero({ card }: { card: KpiHeroCard2 }) {
+  const c = KPI_COLOR2[card.color];
+  const filled = card.variant === 'filled';
+  const Icon = card.icon;
+  return (
+    <div style={{
+      flex: 1, minWidth: 190, borderRadius: 'var(--r2)', padding: '18px 20px',
+      background: filled ? c.solid : 'var(--surface)',
+      border: filled ? 'none' : '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', gap: '10px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: filled ? 'rgba(255,255,255,0.22)' : c.soft,
+          color: filled ? '#fff' : c.text,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}><Icon size={18} /></div>
+        <span style={{ fontSize: '15px', fontWeight: 800, color: filled ? 'rgba(255,255,255,0.9)' : '#000' }}>{card.label}</span>
+      </div>
+      <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'var(--mono)', color: filled ? '#fff' : c.text }}>
+        {card.value}
+      </div>
+      {card.sub && (
+        <div style={{ fontSize: '14px', fontWeight: 700, color: filled ? 'rgba(255,255,255,0.85)' : '#000' }}>{card.sub}</div>
+      )}
+    </div>
+  );
+}
+
+interface KpiProgressCard2 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  percent: number;
+  footer: string;
+  color: KpiColor2;
+}
+
+function KpiProgress({ card }: { card: KpiProgressCard2 }) {
+  const c = KPI_COLOR2[card.color];
+  const Icon = card.icon;
+  return (
+    <div style={{ flex: 1, minWidth: 160, borderRadius: 'var(--r2)', border: '1px solid var(--border)', background: 'var(--surface)', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: c.soft, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={15} /></div>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: '#000' }}>{card.label}</span>
+      </div>
+      <div style={{ fontSize: '21px', fontWeight: 900, color: '#000', fontFamily: 'var(--mono)' }}>{card.value}</div>
+      <div style={{ height: 6, borderRadius: 4, background: 'var(--surface2)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, card.percent))}%`, background: c.solid, borderRadius: 4 }} />
+      </div>
+      <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{card.footer}</div>
+    </div>
+  );
+}
+
+interface KpiSplitStat2 {
+  leftLabel: string; leftValue: string; leftSub?: string;
+  rightLabel: string; rightValue: string; rightIcon?: React.ElementType;
+  progress: number; progressLeftText: string; progressRightText: string;
+  color: KpiColor2;
+}
+
+function KpiSplit({ stat }: { stat: KpiSplitStat2 }) {
+  const c = KPI_COLOR2[stat.color];
+  const RightIcon = stat.rightIcon;
+  return (
+    <div style={{ borderRadius: 'var(--r2)', border: '1px solid var(--border)', background: 'var(--surface2)', padding: '20px 22px' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: '20px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '15px', fontWeight: 800, color: '#000' }}>{stat.leftLabel}</span>
+          <span style={{ fontSize: '32px', fontWeight: 900, color: c.text, fontFamily: 'var(--mono)' }}>{stat.leftValue}</span>
+          {stat.leftSub && <span style={{ fontSize: '14px', color: '#000', fontWeight: 700 }}>{stat.leftSub}</span>}
+        </div>
+        <div style={{ width: 1, background: 'var(--border2)' }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#000' }}>{stat.rightLabel}</span>
+            {RightIcon && (
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: c.soft, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><RightIcon size={15} /></div>
+            )}
+          </div>
+          <span style={{ fontSize: '32px', fontWeight: 900, color: '#000', fontFamily: 'var(--mono)' }}>{stat.rightValue}</span>
+        </div>
+      </div>
+      <div style={{ marginTop: '16px', height: 8, borderRadius: 5, background: 'var(--surface3)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, stat.progress))}%`, background: c.solid, borderRadius: 5 }} />
+      </div>
+      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, color: c.text }}>
+        <span>{stat.progressLeftText}</span>
+        <span>{stat.progressRightText}</span>
+      </div>
+    </div>
+  );
+}
+
+interface KpiListRow3 {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  color: KpiColor2;
+  badge?: boolean;
+}
+
+function KpiListCard({ rows }: { rows: KpiListRow3[] }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: `repeat(auto-fit, minmax(${rows.length > 1 ? '190px' : '260px'}, 1fr))`,
+      gap: '10px',
+    }}>
+      {rows.map((r, i) => {
+        const c = KPI_COLOR2[r.color];
+        const Icon = r.icon;
+        return (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '12px 14px', borderRadius: 'var(--r2)',
+            border: '1px solid var(--border)', background: 'var(--surface)',
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 'var(--r)',
+              background: c.soft, color: c.text,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><Icon size={16} /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</span>
+              <span style={{ fontSize: '16px', fontWeight: 900, color: r.badge ? c.text : '#000', fontFamily: 'var(--mono)' }}>{r.value}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface KpiDetail2 {
+  title: string;
+  subtitle?: string;
+  hero?: KpiHeroCard2[];
+  split?: KpiSplitStat2;
+  pair?: KpiHeroCard2[];
+  progressPair?: KpiProgressCard2[];
+  list?: KpiListRow3[];
+}
+
+function KpiDetailsModalV2({ detail, onClose }: { detail: KpiDetail2; onClose: () => void }) {
+  return (
+    <Modal title={detail.title} subtitle={detail.subtitle} onClose={onClose} width="720px"
+      footer={<button className="btn-default" onClick={onClose}>Fermer</button>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {detail.hero && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.hero.map((h, i) => <KpiHero key={i} card={h} />)}</div>}
+        {detail.split && <KpiSplit stat={detail.split} />}
+        {detail.pair && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.pair.map((h, i) => <KpiHero key={i} card={h} />)}</div>}
+        {detail.progressPair && <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>{detail.progressPair.map((p, i) => <KpiProgress key={i} card={p} />)}</div>}
+        {detail.list && <KpiListCard rows={detail.list} />}
+      </div>
+    </Modal>
   );
 }
 
@@ -1836,6 +2114,9 @@ interface TopbarProps {
   notificationsOpen: boolean;
   onNotificationsOpen: () => void;
   onNotificationsClose: () => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 }
 
 function Topbar({
@@ -1856,12 +2137,14 @@ function Topbar({
   notificationsOpen,
   onNotificationsOpen,
   onNotificationsClose,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder,
 }: TopbarProps) {
   const periods = Object.keys(PERIOD_LABELS) as Period[];
   const [periodModalOpen, setPeriodModalOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
-  const [reportOpen, setReportOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState({ name: 'Sofiane Rahmani', email: 'sofiane@restaurantpro.dz', phone: '+213 550 12 34 56' });
 
@@ -1900,8 +2183,9 @@ function Topbar({
   const displayDate = showPeriodFilters ? periodLabel : formatDateTimeFR(new Date());
 
   return (
-    <header className="topbar">
-      <div className="topbar-brand">
+    <>
+      <header className="topbar">
+        <div className="topbar-brand">
         <div className="brand-icon"><Store size={18} /></div>
         <div>
           <div className="brand-name">RestaurantPro</div>
@@ -1912,6 +2196,16 @@ function Topbar({
         {title && <span className="topbar-title">{title}</span>}
         <span className="topbar-date"><Calendar size={14} />{displayDate}</span>
       </div>
+      {onSearchChange && (
+        <div className="topbar-search">
+          <Search size={14} />
+          <input
+            placeholder={searchPlaceholder || 'Rechercher...'}
+            value={searchValue || ''}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+      )}
       {showPeriodFilters && (
         <>
           <div className="period-group" ref={periodGroupRef}>
@@ -1972,9 +2266,7 @@ function Topbar({
       )}
       <div className="topbar-actions">
         {showExportButtons && (
-          <>
-            <button className="btn-ghost" onClick={() => setExportOpen(true)}><Download size={15} /> Exporter</button>
-          </>
+          <button className="btn-primary" onClick={() => setExportOpen(true)}><Download size={15} /> Exporter</button>
         )}
         <button
           className="notif-btn"
@@ -1990,6 +2282,7 @@ function Topbar({
         </button>
         <div className="avatar" style={{ cursor: 'pointer' }} onClick={() => setProfileOpen(true)}>SR</div>
       </div>
+    </header>
 
       {notificationsOpen && (
         <Modal
@@ -2072,14 +2365,9 @@ function Topbar({
               ))}
             </div>
           </div>
-          <div className="form-row">
-            <div className="field"><label>Du</label><input className="input" type="date" value={toInputDate(getPeriodRange(activePeriod, customRange).from)} readOnly /></div>
-            <div className="field"><label>Au</label><input className="input" type="date" value={toInputDate(getPeriodRange(activePeriod, customRange).to)} readOnly /></div>
-          </div>
-          <div className="note note-amber">Pour changer les dates, utilisez l&apos;onglet « Personnalisé » ci-dessus puis ré-ouvrez l&apos;export.</div>
+
         </Modal>
       )}
-
 
 
       {profileOpen && (
@@ -2103,7 +2391,7 @@ function Topbar({
           <div className="field"><label>Téléphone</label><input className="input" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></div>
         </Modal>
       )}
-    </header>
+    </>
   );
 }
 
@@ -2182,12 +2470,79 @@ function Sidebar({ activePage, onNavigate, collapsed, onToggleCollapsed, onLogou
  * ==========================================================================*/
 
 /* RevenuePage */
+const REVENUE_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
+  ca: {
+    title: "Chiffre d'affaires — détails",
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Coins, label: 'CA total', value: '452 800 DA', variant: 'filled', color: 'blue' },
+      { icon: TrendingUp, label: 'Évolution vs hier', value: '+12.5%', sub: '+50 400 DA par rapport à hier', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Armchair, label: 'CA salle', value: '241 200 DA', percent: 53.3, footer: '53.3 % du total', color: 'blue' },
+      { icon: Sun, label: 'CA terrasse', value: '134 500 DA', percent: 29.7, footer: '29.7 % du total', color: 'green' },
+      { icon: Coffee, label: 'CA cafétéria', value: '77 100 DA', percent: 17.0, footer: '17.0 % du total', color: 'orange' },
+    ],
+    list: [
+      { icon: ClipboardList, label: 'Nombre de commandes', value: '342', color: 'purple' },
+      { icon: FileText, label: 'Ticket moyen', value: '1 421 DA', color: 'orange' },
+      { icon: Clock, label: 'Meilleure heure', value: '12h30 - 14h00', color: 'blue', badge: true },
+    ],
+  },
+  benefice: {
+    title: 'Bénéfice net — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: TrendingUp, label: 'Bénéfice net', value: '128 450 DA', variant: 'filled', color: 'green' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+8.2%', sub: 'Bénéfice en hausse', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Coins, label: 'CA', value: '452 800 DA', percent: 100, footer: 'Base de calcul', color: 'blue' },
+      { icon: ShoppingCart, label: 'Coût matières', value: '230 000 DA', percent: 50.8, footer: '50.8 % du CA', color: 'orange' },
+      { icon: FileText, label: 'Charges', value: '94 350 DA', percent: 20.8, footer: '20.8 % du CA', color: 'red' },
+    ],
+    list: [{ icon: Percent, label: 'Marge nette', value: '28.4 %', color: 'purple' }],
+  },
+  ticket: {
+    title: 'Ticket moyen — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Receipt, label: 'Ticket moyen', value: '1 421 DA', variant: 'filled', color: 'blue' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+3.1%', sub: 'Panier moyen en hausse', variant: 'soft', color: 'green' },
+    ],
+    list: [
+      { icon: ArrowDownRight, label: 'Ticket minimum', value: '180 DA', color: 'red' },
+      { icon: ArrowUpRight, label: 'Ticket maximum', value: '8 400 DA', color: 'green' },
+      { icon: Receipt, label: 'Nombre de tickets', value: '318', color: 'blue' },
+    ],
+  },
+  marge: {
+    title: 'Taux de marge — détails',
+    subtitle: "Aujourd'hui",
+    split: {
+      leftLabel: 'Taux de marge actuel', leftValue: '28.4 %', leftSub: "sur le chiffre d'affaires",
+      rightLabel: 'Objectif de marge', rightValue: '30 %', rightIcon: Target,
+      progress: 95, progressLeftText: "95 % de l'objectif atteint", progressRightText: '1.6 % restant',
+      color: 'blue',
+    },
+    pair: [
+      { icon: ArrowDownRight, label: 'Évolution vs hier', value: '-1.2%', sub: '↓ Baisse', variant: 'soft', color: 'red' },
+      { icon: Flag, label: 'Objectif marge', value: '30 %', sub: 'Objectif mensuel', variant: 'soft', color: 'orange' },
+    ],
+    progressPair: [
+      { icon: ShoppingCart, label: 'Coût matières / CA', value: '50.8 %', percent: 50.8, footer: '● Élevé', color: 'orange' },
+      { icon: FileText, label: 'Charges / CA', value: '20.8 %', percent: 20.8, footer: '● Maîtrisé', color: 'blue' },
+    ],
+  },
+};
+
 function RevenuePage() {
+  const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   return (
     <>
       <div className="section">
         <div className="kpi-grid">
-          <div className="kpi-card">
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('ca')}>
             <div className="kpi-icon blue"><Coins size={22} /></div>
             <div className="kpi-content">
               <div className="kpi-label">Chiffre d'affaires</div>
@@ -2195,7 +2550,7 @@ function RevenuePage() {
               <div className="kpi-delta delta-up"><ArrowUpRight size={13} /> +12.5%</div>
             </div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('benefice')}>
             <div className="kpi-icon green"><TrendingUp size={22} /></div>
             <div className="kpi-content">
               <div className="kpi-label">Bénéfice net</div>
@@ -2203,7 +2558,7 @@ function RevenuePage() {
               <div className="kpi-delta delta-up"><ArrowUpRight size={13} /> +8.2%</div>
             </div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('ticket')}>
             <div className="kpi-icon blue"><Receipt size={22} /></div>
             <div className="kpi-content">
               <div className="kpi-label">Ticket moyen</div>
@@ -2211,7 +2566,7 @@ function RevenuePage() {
               <div className="kpi-delta delta-up"><ArrowUpRight size={13} /> +3.1%</div>
             </div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('marge')}>
             <div className="kpi-icon purple"><Percent size={22} /></div>
             <div className="kpi-content">
               <div className="kpi-label">Taux de marge</div>
@@ -2263,11 +2618,9 @@ function RevenuePage() {
           <div className="card"><div className="card-header"><h3><CalendarDays size={16} color="var(--blue)" /> Mois</h3></div><div className="card-body"><div className="stat-row"><div className="lbl">CA</div><div className="val val-price">11 200 000 DA</div></div><div className="stat-row"><div className="lbl">Coût mat.</div><div className="val val-price">5 600 000 DA</div></div><div className="stat-row"><div className="lbl">Charges</div><div className="val val-price">2 240 000 DA</div></div><div className="stat-row"><div className="lbl" style={{color:'var(--green)'}}>Bénéfice</div><div className="val" style={{color:'var(--green)'}}>3 360 000 DA</div></div><div className="stat-row"><div className="lbl">Marge</div><div className="val">30.0%</div></div></div></div>
         </div>
       </div>
-      <div style={{ marginTop: '16px', textAlign: 'right' }}>
-        <button className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => window.location.hash = 'flux'}>
-          <History size={16} /> Voir tous les flux
-        </button>
-      </div>
+      {kpiOpen && REVENUE_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={REVENUE_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
+      )}
     </>
   );
 }
@@ -2286,25 +2639,84 @@ const ALL_SOLD_ITEMS = [
   { rank: 10, name: 'Limonade Menthe', cat: 'Boissons', catCls: 'b-green', qty: 88, ca: '39 600 DA', evo: '+9%', up: true },
 ];
 
+const COMMERCIAL_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
+  commandes: {
+    title: 'Commandes — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: ShoppingBag, label: 'Commandes', value: '342', variant: 'filled', color: 'blue' },
+      { icon: ArrowDownRight, label: 'Évolution vs hier', value: '-2.4%', sub: 'Légère baisse', variant: 'soft', color: 'red' },
+    ],
+    progressPair: [
+      { icon: Armchair, label: 'Sur place', value: '265', percent: 77.5, footer: '77.5 % des commandes', color: 'blue' },
+      { icon: ShoppingBag, label: 'À emporter', value: '77', percent: 22.5, footer: '22.5 % des commandes', color: 'green' },
+    ],
+    list: [
+      { icon: X, label: 'Commandes annulées', value: '14', color: 'red' },
+    ],
+  },
+  tickets: {
+    title: 'Tickets encaissés — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Receipt, label: 'Tickets encaissés', value: '318', variant: 'filled', color: 'green' },
+      { icon: ArrowUpRight, label: 'Évolution vs hier', value: '+5.7%', sub: 'Bonne progression', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Banknote, label: 'Espèces', value: '185 000 DA', percent: 40.9, footer: '40.9 % des encaissements', color: 'green' },
+      { icon: CreditCard, label: 'CIB', value: '198 000 DA', percent: 43.7, footer: '43.7 % des encaissements', color: 'blue' },
+      { icon: FileText, label: 'Virement', value: '42 000 DA', percent: 9.3, footer: '9.3 % des encaissements', color: 'orange' },
+      { icon: Layers, label: 'Mixte', value: '27 800 DA', percent: 6.1, footer: '6.1 % des encaissements', color: 'purple' },
+    ],
+    list: [
+      { icon: Coins, label: 'Total encaissé', value: '452 800 DA', color: 'blue' },
+    ],
+  },
+  remises: {
+    title: 'Remises — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Tag, label: 'Total remises', value: '12 400 DA', variant: 'filled', color: 'orange' },
+      { icon: ListOrdered, label: "Nombre d'applications", value: '23', sub: 'Applications ce jour', variant: 'soft', color: 'blue' },
+    ],
+    progressPair: [
+      { icon: Pencil, label: 'Manuelles', value: '8 200 DA', percent: 66.1, footer: '66.1 % des remises', color: 'blue' },
+      { icon: Heart, label: 'Fidélité', value: '3 100 DA', percent: 25.0, footer: '25.0 % des remises', color: 'red' },
+      { icon: Gift, label: 'Offertes', value: '3 200 DA', percent: 25.8, footer: '25.8 % des remises', color: 'purple' },
+    ],
+  },
+  offerts: {
+    title: 'Offerts — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Gift, label: 'Total offert', value: '3 200 DA', variant: 'filled', color: 'purple' },
+      { icon: Star, label: "Nombre d'articles offerts", value: '9', sub: 'Gestes commerciaux', variant: 'soft', color: 'orange' },
+    ],
+    list: [
+      { icon: Heart, label: 'Motif principal', value: 'Geste commercial', color: 'blue' },
+    ],
+  },
+};
+
 function CommercialPage() {
-  const [showAllSold, setShowAllSold] = useState(false);
+  const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   return (
     <>
       <div className="section">
         <div className="kpi-grid">
-          <div className="kpi-card"><div className="kpi-icon blue"><ShoppingBag size={22} /></div><div className="kpi-content"><div className="kpi-label">Commandes</div><div className="kpi-value">342</div><div className="kpi-delta delta-down">-2.4%</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon green"><Receipt size={22} /></div><div className="kpi-content"><div className="kpi-label">Tickets encaissés</div><div className="kpi-value">318</div><div className="kpi-delta delta-up">+5.7%</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon orange"><Tag size={22} /></div><div className="kpi-content"><div className="kpi-label">Remises</div><div className="kpi-value kpi-price">12 400 <small>DA</small></div><div className="kpi-delta delta-neu">23 app.</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon purple"><Gift size={22} /></div><div className="kpi-content"><div className="kpi-label">Offerts</div><div className="kpi-value kpi-price">3 200 <small>DA</small></div><div className="kpi-delta delta-neu">9 offerts</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('commandes')}><div className="kpi-icon blue"><ShoppingBag size={22} /></div><div className="kpi-content"><div className="kpi-label">Commandes</div><div className="kpi-value">342</div><div className="kpi-delta delta-down">-2.4%</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('tickets')}><div className="kpi-icon green"><Receipt size={22} /></div><div className="kpi-content"><div className="kpi-label">Tickets encaissés</div><div className="kpi-value">318</div><div className="kpi-delta delta-up">+5.7%</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('remises')}><div className="kpi-icon orange"><Tag size={22} /></div><div className="kpi-content"><div className="kpi-label">Remises</div><div className="kpi-value kpi-price">12 400 <small>DA</small></div><div className="kpi-delta delta-neu">23 app.</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('offerts')}><div className="kpi-icon purple"><Gift size={22} /></div><div className="kpi-content"><div className="kpi-label">Offerts</div><div className="kpi-value kpi-price">3 200 <small>DA</small></div><div className="kpi-delta delta-neu">9 offerts</div></div></div>
         </div>
       </div>
-      <div className="section charts-2">
+      <div className="section full-row">
         <div className="card tbl-wrap">
-          <div className="card-header"><h3><Star size={16} color="var(--blue)" /> Top ventes</h3><button className="link" onClick={() => setShowAllSold(true)}>Voir tout →</button></div>
+          <div className="card-header"><h3><Star size={16} color="var(--blue)" /> Top ventes — tous les articles</h3></div>
           <table>
             <thead><tr><th>#</th><th>Produit</th><th>Catégorie</th><th>Qté</th><th>CA</th><th>Évol.</th></tr></thead>
             <tbody>
-              {ALL_SOLD_ITEMS.slice(0,6).map((it) => (
+              {ALL_SOLD_ITEMS.map((it) => (
                 <tr key={it.rank}>
                   <td><span className="rank">{it.rank}</span></td>
                   <td className="td-name">{it.name}</td>
@@ -2336,15 +2748,8 @@ function CommercialPage() {
           <div className="stat-row"><div className="lbl"><ListOrdered size={15} /> Nb app.</div><div className="val">23</div></div>
         </div></div>
       </div>
-      {showAllSold && (
-        <Modal title="Tous les articles vendus" subtitle="Classement complet" onClose={() => setShowAllSold(false)} width="640px" footer={<button className="btn-primary" onClick={() => setShowAllSold(false)}>Fermer</button>}>
-          <div className="tbl-wrap" style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)' }}>
-            <table><thead><tr><th>#</th><th>Produit</th><th>Catégorie</th><th>Qté</th><th>CA</th><th>Évol.</th></tr></thead>
-            <tbody>{ALL_SOLD_ITEMS.map((it) => (
-              <tr key={it.rank}><td><span className="rank">{it.rank}</span></td><td className="td-name">{it.name}</td><td><span className={`badge ${it.catCls}`}>{it.cat}</span></td><td>{it.qty}</td><td className="td-blue">{it.ca}</td><td className={it.up ? 'delta-up' : 'delta-down'} style={{fontSize:'15px', fontWeight:'800'}}>{it.evo}</td></tr>
-            ))}</tbody></table>
-          </div>
-        </Modal>
+      {kpiOpen && COMMERCIAL_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={COMMERCIAL_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
   );
@@ -2361,29 +2766,88 @@ const ALL_OUT_OF_STOCK = [
   { name: 'Mozzarella', cat: 'Laitiers', qty: '0 kg', date: 'Hier', badge: 'b-red', label: 'Rupture' },
 ];
 
+const STOCK_KPI_DETAILS_V2: Record<string, KpiDetail2> = {
+  valeur: {
+    title: 'Valeur du stock — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Package, label: 'Valeur du stock', value: '1 450 200 DA', variant: 'filled', color: 'blue' },
+      { icon: ArrowUpRight, label: 'Évolution', value: '+4.2%', sub: 'Stock en hausse', variant: 'soft', color: 'green' },
+    ],
+    progressPair: [
+      { icon: Beef, label: 'Viandes', value: '450 000 DA', percent: 31.0, footer: '31.0 % du stock', color: 'red' },
+      { icon: Salad, label: 'Légumes', value: '120 000 DA', percent: 8.3, footer: '8.3 % du stock', color: 'green' },
+      { icon: GlassWater, label: 'Laitiers', value: '85 000 DA', percent: 5.9, footer: '5.9 % du stock', color: 'blue' },
+      { icon: ShoppingBasket, label: 'Épicerie', value: '320 000 DA', percent: 22.1, footer: '22.1 % du stock', color: 'orange' },
+      { icon: Wine, label: 'Boissons', value: '198 000 DA', percent: 13.7, footer: '13.7 % du stock', color: 'purple' },
+      { icon: MoreHorizontal, label: 'Autres', value: '277 200 DA', percent: 19.1, footer: '19.1 % du stock', color: 'blue' },
+    ],
+  },
+  produits: {
+    title: 'Produits en stock — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Box, label: 'Produits en stock', value: '1 248', variant: 'filled', color: 'blue' },
+      { icon: Layers, label: 'Catégories', value: '37', sub: 'Catégories actives', variant: 'soft', color: 'purple' },
+    ],
+    list: [
+      { icon: AlertTriangle, label: 'Articles sous le seuil', value: '11', color: 'orange' },
+    ],
+  },
+  ruptures: {
+    title: 'Ruptures — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: AlertTriangle, label: 'Ruptures', value: '4', variant: 'filled', color: 'red' },
+      { icon: Clock, label: 'Statut', value: 'Urgent', sub: 'Action requise', variant: 'soft', color: 'red' },
+    ],
+    list: [
+      { icon: Package, label: 'Filet de Bœuf', value: '2.5 kg · Viandes', color: 'red' },
+      { icon: Fish, label: 'Saumon Frais', value: '0 kg · Poissons', color: 'red' },
+      { icon: GlassWater, label: 'Mozzarella', value: '0 kg · Laitiers', color: 'red' },
+    ],
+  },
+  expirations: {
+    title: 'Expirations — détails',
+    subtitle: "Aujourd'hui",
+    hero: [
+      { icon: Clock, label: 'Expirations proches', value: '7', variant: 'filled', color: 'orange' },
+      { icon: CalendarRange, label: 'Fenêtre de surveillance', value: '7 jours', sub: 'Produits à surveiller', variant: 'soft', color: 'blue' },
+    ],
+    list: [
+      { icon: Milk, label: 'Lait Entier', value: '15 L · expire dans 1 j.', color: 'red' },
+      { icon: GlassWater, label: 'Crème Fraîche', value: '4 kg · expire dans 2 j.', color: 'red' },
+      { icon: FlaskConical, label: "Huile d'Olive", value: '12 u. · expire dans 4 j.', color: 'orange' },
+      { icon: Wheat, label: 'Farine T45', value: '15 kg · expire dans 7 j.', color: 'orange' },
+    ],
+  },
+};
+
 function StockPage() {
-  const [showAllOOS, setShowAllOOS] = useState(false);
+  const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   return (
     <>
       <div className="section">
         <div className="kpi-grid">
-          <div className="kpi-card"><div className="kpi-icon blue"><Package size={22} /></div><div className="kpi-content"><div className="kpi-label">Valeur stock</div><div className="kpi-value kpi-price">1 450 200 <small>DA</small></div><div className="kpi-delta delta-up">+4.2%</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon blue"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Produits en stock</div><div className="kpi-value">1 248 <small>art.</small></div><div className="kpi-delta delta-neu">37 cat.</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon red"><AlertTriangle size={22} /></div><div className="kpi-content"><div className="kpi-label">Ruptures</div><div className="kpi-value" style={{color:'var(--red)'}}>4</div><div className="kpi-delta delta-down">Urgent</div></div></div>
-          <div className="kpi-card"><div className="kpi-icon orange"><Clock size={22} /></div><div className="kpi-content"><div className="kpi-label">Expirations</div><div className="kpi-value" style={{color:'var(--orange)'}}>7</div><div className="kpi-delta" style={{color:'var(--orange)'}}>7 jours</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('valeur')}><div className="kpi-icon blue"><Package size={22} /></div><div className="kpi-content"><div className="kpi-label">Valeur stock</div><div className="kpi-value kpi-price">1 450 200 <small>DA</small></div><div className="kpi-delta delta-up">+4.2%</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('produits')}><div className="kpi-icon blue"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Produits en stock</div><div className="kpi-value">1 248 <small>art.</small></div><div className="kpi-delta delta-neu">37 cat.</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('ruptures')}><div className="kpi-icon red"><AlertTriangle size={22} /></div><div className="kpi-content"><div className="kpi-label">Ruptures</div><div className="kpi-value" style={{color:'var(--red)'}}>4</div><div className="kpi-delta delta-down">Urgent</div></div></div>
+          <div className="kpi-card clickable" onClick={() => setKpiOpen('expirations')}><div className="kpi-icon orange"><Clock size={22} /></div><div className="kpi-content"><div className="kpi-label">Expirations</div><div className="kpi-value" style={{color:'var(--orange)'}}>7</div><div className="kpi-delta" style={{color:'var(--orange)'}}>7 jours</div></div></div>
         </div>
       </div>
-      <div className="section charts-2eq">
-        <div className="card" style={{overflow: 'visible'}}>
-          <div className="card-header"><h3><AlertCircle size={16} color="var(--red)" /> Ruptures</h3><button className="link" onClick={() => setShowAllOOS(true)}>Voir tout →</button></div>
+      <div className="section full-row">
+        <div className="card tbl-wrap">
+          <div className="card-header"><h3><AlertCircle size={16} color="var(--red)" /> Ruptures — liste complète</h3></div>
           <table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Date</th><th>Statut</th></tr></thead>
           <tbody>
-            {ALL_OUT_OF_STOCK.slice(0,4).map((p) => (
+            {ALL_OUT_OF_STOCK.map((p) => (
               <tr key={p.name}><td className="td-name">{p.name}</td><td>{p.cat}</td><td>{p.qty}</td><td style={{fontSize:'15px'}}>{p.date}</td><td><span className={`badge ${p.badge}`}>{p.label}</span></td></tr>
             ))}
           </tbody></table>
         </div>
-        <div className="card" style={{overflow: 'visible'}}>
+      </div>
+      <div className="section full-row">
+        <div className="card tbl-wrap">
           <div className="card-header"><h3><Clock size={16} color="var(--orange)" /> Proches expiration</h3></div>
           <table><thead><tr><th>Produit</th><th>Qté</th><th>Expiration</th><th>Jours</th><th>Valeur</th></tr></thead>
           <tbody>
@@ -2405,10 +2869,8 @@ function StockPage() {
           <div className="stat-row"><div className="lbl"><MoreHorizontal size={15} /> Autres</div><div className="val val-price">277 200 DA</div></div>
         </div></div>
       </div>
-      {showAllOOS && (
-        <Modal title="Produits en rupture" subtitle="Liste complète" onClose={() => setShowAllOOS(false)} width="600px" footer={<button className="btn-primary" onClick={() => setShowAllOOS(false)}>Fermer</button>}>
-          <div className="tbl-wrap"><table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Date</th><th>Statut</th></tr></thead><tbody>{ALL_OUT_OF_STOCK.map(p => <tr key={p.name}><td className="td-name">{p.name}</td><td>{p.cat}</td><td>{p.qty}</td><td style={{fontSize:'15px'}}>{p.date}</td><td><span className={`badge ${p.badge}`}>{p.label}</span></td></tr>)}</tbody></table></div>
-        </Modal>
+      {kpiOpen && STOCK_KPI_DETAILS_V2[kpiOpen] && (
+        <KpiDetailsModalV2 detail={STOCK_KPI_DETAILS_V2[kpiOpen]} onClose={() => setKpiOpen(null)} />
       )}
     </>
   );
@@ -2494,8 +2956,8 @@ function RestaurantSettingsPage() {
           <div className="card-header"><h3><Printer size={16} color="var(--blue)" /> Contenu du ticket</h3></div>
           <div className="card-body">
             <div className="field"><label>En-tête</label><input className="input" defaultValue="Authentic Algerian Gastronomy" /></div>
-            <div className="field"><label>Pied de page</label><textarea className="input" rows={3} style={{ minHeight: '95px', resize: 'vertical' }} defaultValue={`Bon Appétit !\nMerci de votre confiance.\nOuvert 7j/7 de 11h à 23h.`}></textarea></div>
-            <div style={{border:'1px solid var(--border)', borderRadius:'var(--r)', padding:'14px', background:'var(--surface2)'}}>
+            <div className="field" style={{marginBottom:'18px'}}><label>Pied de page</label><textarea className="input" rows={3} style={{ minHeight: '95px', resize: 'vertical' }} defaultValue={`Bon Appétit !\nMerci de votre confiance.\nOuvert 7j/7 de 11h à 23h.`}></textarea></div>
+            <div style={{border:'1px solid var(--border)', borderRadius:'var(--r)', padding:'14px', background:'var(--surface2)', marginTop:'22px'}}>
               <div style={{fontSize:'15px', fontWeight:'800', color:'#000', marginBottom:'10px', display:'flex', alignItems:'center', gap:'5px'}}><Eye size={13} /> APERÇU</div>
               <div style={{fontFamily:"'Courier New', monospace", fontSize:'15px', lineHeight:'1.7', color:'#000', textAlign:'center', border:'1px dashed var(--border)', borderRadius:'6px', padding:'12px'}}>
                 <div style={{fontSize:'17px', fontWeight:'800'}}>L'ARÔME GOURMET</div>
@@ -2540,9 +3002,9 @@ function RestaurantSettingsPage() {
   );
 }
 
-/* Tables & Zones */
+/* Tables */
 type TableStatus = 'libre' | 'occupee' | 'reservee';
-interface TableRow { id: string; name: string; capacity: number; status: TableStatus; }
+interface TableRow { id: string; name: string; capacity: number; status: TableStatus; montant?: number; reservationDate?: string; }
 const STATUS_CYCLE: Record<TableStatus, TableStatus> = { libre:'occupee', occupee:'reservee', reservee:'libre' };
 const STATUS_BADGE: Record<TableStatus, { cls: string; label: string }> = {
   libre: { cls:'b-green', label:'● Libre' },
@@ -2550,94 +3012,150 @@ const STATUS_BADGE: Record<TableStatus, { cls: string; label: string }> = {
   reservee: { cls:'b-amber', label:'● Réservée' },
 };
 
-function ZoneTable({ title, icon: Icon, headerBg, headerColor, countColor, rows, onCycle, statusFilter }: {
+function ZoneTable({ title, icon: Icon, headerBg, headerColor, countColor, rows, totalCount, onCycle }: {
   title: string; icon: React.ElementType; headerBg: string; headerColor: string; countColor: string;
-  rows: TableRow[]; onCycle: (id: string) => void; statusFilter: string | null;
+  rows: TableRow[]; totalCount: number; onCycle: (id: string) => void;
 }) {
-  const filtered = statusFilter ? rows.filter(r => r.status === statusFilter) : rows;
   return (
     <div className="card tbl-wrap">
       <div className="card-header" style={{background: headerBg, borderBottomColor: headerColor}}>
         <h3 style={{color: headerColor}}>
           <Icon size={16} /> {title}{' '}
           <span style={{fontWeight:'800', fontSize:'15px', color: countColor}}>
-            {filtered.length}{statusFilter ? ` / ${rows.length}` : ''}
+            {rows.length}{totalCount !== rows.length ? ` / ${totalCount}` : ''}
           </span>
         </h3>
       </div>
-      <table><thead><tr><th>Table</th><th>Capacité</th><th>Statut</th></tr></thead>
-      <tbody>
-        {filtered.length === 0 ? (
-          <tr><td colSpan={3} style={{textAlign:'center', color:'#888', padding:'20px', fontSize:'15px'}}>Aucune table pour ce filtre</td></tr>
-        ) : filtered.map((r) => (
-          <tr key={r.id}><td className="td-name">{r.name}</td><td>{r.capacity} pers.</td><td><span className={`badge ${STATUS_BADGE[r.status].cls}`} style={{cursor:'pointer'}} onClick={() => onCycle(r.id)}>{STATUS_BADGE[r.status].label}</span></td></tr>
-        ))}
+      <table><thead><tr><th>Table</th><th>Capacité</th><th>Statut</th><th>Détails</th></tr></thead>
+      <tbody>{rows.map((r) => (
+        <tr key={r.id}>
+          <td className="td-name">{r.name}</td>
+          <td>{r.capacity} pers.</td>
+          <td><span className={`badge ${STATUS_BADGE[r.status].cls}`} style={{cursor:'pointer'}} onClick={() => onCycle(r.id)}>{STATUS_BADGE[r.status].label}</span></td>
+          <td style={{fontSize:'15px'}}>
+            {r.status === 'occupee' && r.montant !== undefined && <span className="td-blue">{r.montant.toLocaleString('fr-FR')} DA</span>}
+            {r.status === 'reservee' && r.reservationDate && <span>{r.reservationDate}</span>}
+            {r.status === 'libre' && <span style={{color:'#000'}}>—</span>}
+          </td>
+        </tr>
+      ))}
+      {rows.length === 0 && <tr><td colSpan={4} style={{textAlign:'center', color:'#888', padding:'20px'}}>Aucune table trouvée pour ce filtre</td></tr>}
       </tbody></table>
     </div>
   );
 }
 
-function TablesZonesPage() {
+function TablesZonesPage({ searchQuery }: { searchQuery: string }) {
   const [salle, setSalle] = useState<TableRow[]>([
     { id:'s1', name:'Table 1', capacity:4, status:'libre' },
-    { id:'s2', name:'Table 2', capacity:2, status:'occupee' },
-    { id:'s3', name:'Table 3', capacity:6, status:'reservee' },
+    { id:'s2', name:'Table 2', capacity:2, status:'occupee', montant:1850 },
+    { id:'s3', name:'Table 3', capacity:6, status:'reservee', reservationDate:'Ce soir · 20h00' },
     { id:'s4', name:'Table 4', capacity:4, status:'libre' },
-    { id:'s5', name:'Table 5', capacity:8, status:'occupee' },
-    { id:'s6', name:'Table 6', capacity:4, status:'reservee' },
+    { id:'s5', name:'Table 5', capacity:8, status:'occupee', montant:4200 },
+    { id:'s6', name:'Table 6', capacity:4, status:'reservee', reservationDate:'Demain · 12h30' },
   ]);
   const [terrasse, setTerrasse] = useState<TableRow[]>([
     { id:'t1', name:'T-01', capacity:4, status:'libre' },
-    { id:'t2', name:'T-02', capacity:4, status:'occupee' },
+    { id:'t2', name:'T-02', capacity:4, status:'occupee', montant:1200 },
     { id:'t3', name:'T-03', capacity:2, status:'libre' },
-    { id:'t4', name:'T-04', capacity:6, status:'reservee' },
-    { id:'t5', name:'T-05', capacity:4, status:'occupee' },
+    { id:'t4', name:'T-04', capacity:6, status:'reservee', reservationDate:'Aujourd\'hui · 19h30' },
+    { id:'t5', name:'T-05', capacity:4, status:'occupee', montant:2650 },
   ]);
   const [cafet, setCafet] = useState<TableRow[]>([
-    { id:'c1', name:'C-1', capacity:2, status:'occupee' },
+    { id:'c1', name:'C-1', capacity:2, status:'occupee', montant:450 },
     { id:'c2', name:'C-2', capacity:2, status:'libre' },
     { id:'c3', name:'C-3', capacity:4, status:'libre' },
-    { id:'c4', name:'C-4', capacity:2, status:'occupee' },
+    { id:'c4', name:'C-4', capacity:2, status:'occupee', montant:680 },
   ]);
-
+  const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'libre' | 'occupee' | 'reservee' | null>(null);
 
   const cycle = (rows: TableRow[], setRows: (r: TableRow[]) => void, id: string) => {
-    setRows(rows.map((r) => (r.id === id ? { ...r, status: STATUS_CYCLE[r.status] } : r)));
+    setRows(rows.map((r) => {
+      if (r.id !== id) return r;
+      const nextStatus = STATUS_CYCLE[r.status];
+      if (nextStatus === 'occupee') return { ...r, status: nextStatus, montant: r.montant ?? Math.round((800 + Math.random() * 2500) / 50) * 50 };
+      if (nextStatus === 'reservee') return { ...r, status: nextStatus, reservationDate: r.reservationDate ?? 'À définir' };
+      return { ...r, status: nextStatus };
+    }));
   };
 
   const toggleFilter = (f: 'libre' | 'occupee' | 'reservee') => {
     setStatusFilter(prev => prev === f ? null : f);
   };
 
+  const q = (searchQuery || '').toLowerCase();
+  const matches = (r: TableRow) => (!q || r.name.toLowerCase().includes(q) || STATUS_BADGE[r.status].label.toLowerCase().includes(q)) && (!statusFilter || r.status === statusFilter);
+  const salleFiltered = salle.filter(matches);
+  const terrasseFiltered = terrasse.filter(matches);
+  const cafetFiltered = cafet.filter(matches);
+
   const allRows = [...salle, ...terrasse, ...cafet];
   const total = allRows.length;
   const libres = allRows.filter(r => r.status === 'libre').length;
   const occupees = allRows.filter(r => r.status === 'occupee').length;
   const reservees = allRows.filter(r => r.status === 'reservee').length;
-  const montantEnCours = occupees * 1500;
+  const montantEnCours = allRows.filter(r => r.status === 'occupee').reduce((sum, r) => sum + (r.montant || 0), 0);
 
-  const kpiActiveStyle = (f: string): React.CSSProperties => statusFilter === f
-    ? { outline: '2.5px solid currentColor', outlineOffset: '2px', transform: 'translateY(-2px)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' }
-    : {};
+  const montantEnCoursDetail: KpiDetail2 = {
+    title: 'Montant en cours — détails',
+    hero: [
+      {
+        icon: Wallet,
+        label: 'Montant en cours',
+        value: `${montantEnCours.toLocaleString()} DA`,
+        sub: 'Total des commandes en cours',
+        variant: 'filled',
+        color: 'blue',
+      },
+    ],
+    pair: [
+      {
+        icon: Armchair,
+        label: 'Tables occupées',
+        value: String(occupees),
+        sub: 'Tables actuellement utilisées',
+        variant: 'soft',
+        color: 'blue',
+      },
+      {
+        icon: BarChart3,
+        label: 'Montant moyen / table',
+        value: occupees > 0 ? `${Math.round(montantEnCours / occupees).toLocaleString()} DA` : '0 DA',
+        sub: 'Moyenne par table occupée',
+        variant: 'soft',
+        color: 'green',
+      },
+    ],
+  };
+
+  const kpiActiveStyle = (f: 'libre' | 'occupee' | 'reservee' | null): React.CSSProperties => {
+    if (f === null && statusFilter === null) {
+      return { outline: '2.5px solid var(--blue)', outlineOffset: '2px', transform: 'translateY(-2px)', boxShadow: '0 6px 18px rgba(37,99,235,0.18)' };
+    }
+    if (statusFilter === f && f !== null) {
+      const colorMap = { libre: 'var(--green)', occupee: 'var(--red)', reservee: 'var(--orange)' };
+      return { outline: `2.5px solid ${colorMap[f]}`, outlineOffset: '2px', transform: 'translateY(-2px)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' };
+    }
+    return {};
+  };
 
   return (
     <>
-      <div className="section" style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
-        {/* Total — pas filtrable, remet à zéro */}
+      <div className="section" style={{display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:'10px'}}>
         <div
-          className="kpi-card"
-          style={{flex:'1', cursor:'pointer', ...(statusFilter === null ? { outline: '2.5px solid var(--blue)', outlineOffset:'2px', transform:'translateY(-2px)', boxShadow:'0 6px 18px rgba(37,99,235,0.18)' } : {})}}
+          className="kpi-card clickable"
+          style={{cursor:'pointer', ...kpiActiveStyle(null)}}
           onClick={() => setStatusFilter(null)}
-          title="Afficher tout"
+          title="Afficher toutes les tables"
         >
           <div className="kpi-icon blue"><LayoutGrid size={22} /></div>
           <div className="kpi-content"><div className="kpi-label">Total tables</div><div className="kpi-value">{total}</div></div>
         </div>
 
         <div
-          className="kpi-card"
-          style={{flex:'1', cursor:'pointer', color:'var(--green)', ...kpiActiveStyle('libre')}}
+          className="kpi-card clickable"
+          style={{cursor:'pointer', color:'var(--green)', ...kpiActiveStyle('libre')}}
           onClick={() => toggleFilter('libre')}
           title="Filtrer : Libres"
         >
@@ -2646,8 +3164,8 @@ function TablesZonesPage() {
         </div>
 
         <div
-          className="kpi-card"
-          style={{flex:'1', cursor:'pointer', color:'var(--red)', ...kpiActiveStyle('occupee')}}
+          className="kpi-card clickable"
+          style={{cursor:'pointer', color:'var(--red)', ...kpiActiveStyle('occupee')}}
           onClick={() => toggleFilter('occupee')}
           title="Filtrer : Occupées"
         >
@@ -2656,8 +3174,8 @@ function TablesZonesPage() {
         </div>
 
         <div
-          className="kpi-card"
-          style={{flex:'1', cursor:'pointer', color:'var(--orange)', ...kpiActiveStyle('reservee')}}
+          className="kpi-card clickable"
+          style={{cursor:'pointer', color:'var(--orange)', ...kpiActiveStyle('reservee')}}
           onClick={() => toggleFilter('reservee')}
           title="Filtrer : Réservées"
         >
@@ -2665,27 +3183,35 @@ function TablesZonesPage() {
           <div className="kpi-content"><div className="kpi-label">Réservées</div><div className="kpi-value" style={{color:'var(--orange)'}}>{reservees}</div></div>
         </div>
 
-        <div className="kpi-card" style={{flex:'1'}}>
+        <div
+          className="kpi-card clickable"
+          onClick={() => setKpiOpen('montant')}
+          title="Voir le détail du montant en cours"
+        >
           <div className="kpi-icon blue"><Banknote size={22} /></div>
           <div className="kpi-content"><div className="kpi-label">Montant en cours</div><div className="kpi-value kpi-price">{montantEnCours.toLocaleString()} <small>DA</small></div></div>
         </div>
       </div>
 
       {statusFilter && (
-        <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px', padding:'8px 4px'}}>
-          <span style={{fontSize:'15px', color:'#555'}}>Filtre actif :</span>
+        <div style={{display:'flex', alignItems:'center', gap:'10px', margin:'8px 0 14px 0', padding:'8px 12px', background:'var(--surface)', borderRadius:'var(--r)', border:'1px solid var(--border)'}}>
+          <span style={{fontSize:'14px', fontWeight:'700', color:'var(--text2)'}}>Filtre actif :</span>
           <span className={`badge ${ statusFilter === 'libre' ? 'b-green' : statusFilter === 'occupee' ? 'b-red' : 'b-amber' }`}>
-            {statusFilter === 'libre' ? '● Libre' : statusFilter === 'occupee' ? '● Occupée' : '● Réservée'}
+            {statusFilter === 'libre' ? '● Libres' : statusFilter === 'occupee' ? '● Occupées' : '● Réservées'}
           </span>
-          <button className="btn-ghost" style={{padding:'4px 12px', fontSize:'13px'}} onClick={() => setStatusFilter(null)}>✕ Réinitialiser</button>
+          <button className="btn-ghost" style={{padding:'4px 10px', fontSize:'13px', marginLeft:'auto'}} onClick={() => setStatusFilter(null)}>✕ Réinitialiser le filtre</button>
         </div>
       )}
 
-      <div className="section zone-grid">
-        <ZoneTable title="Salle" icon={Armchair} headerBg="var(--blue-soft)" headerColor="var(--blue2)" countColor="var(--blue)" rows={salle} onCycle={(id) => cycle(salle, setSalle, id)} statusFilter={statusFilter} />
-        <ZoneTable title="Terrasse" icon={Sun} headerBg="var(--green-soft)" headerColor="var(--green)" countColor="var(--green)" rows={terrasse} onCycle={(id) => cycle(terrasse, setTerrasse, id)} statusFilter={statusFilter} />
-        <ZoneTable title="Cafétéria" icon={Coffee} headerBg="var(--orange-soft)" headerColor="var(--orange)" countColor="var(--orange)" rows={cafet} onCycle={(id) => cycle(cafet, setCafet, id)} statusFilter={statusFilter} />
+      <div className="section full-row">
+        <ZoneTable title="Salle" icon={Armchair} headerBg="var(--blue-soft)" headerColor="var(--blue2)" countColor="var(--blue)" rows={salleFiltered} totalCount={salle.length} onCycle={(id) => cycle(salle, setSalle, id)} />
+        <ZoneTable title="Terrasse" icon={Sun} headerBg="var(--green-soft)" headerColor="var(--green)" countColor="var(--green)" rows={terrasseFiltered} totalCount={terrasse.length} onCycle={(id) => cycle(terrasse, setTerrasse, id)} />
+        <ZoneTable title="Cafétéria" icon={Coffee} headerBg="var(--orange-soft)" headerColor="var(--orange)" countColor="var(--orange)" rows={cafetFiltered} totalCount={cafet.length} onCycle={(id) => cycle(cafet, setCafet, id)} />
       </div>
+
+      {kpiOpen === 'montant' && (
+        <KpiDetailsModalV2 detail={montantEnCoursDetail} onClose={() => setKpiOpen(null)} />
+      )}
     </>
   );
 }
@@ -2709,7 +3235,7 @@ const ROLE_STYLES: Record<UserRole, { avatarBg: string; avatarColor: string; bad
 };
 function initialsOf(name: string) { return name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??'; }
 
-function UsersPage() {
+function UsersPage({ searchQuery }: { searchQuery: string }) {
   const [staff, setStaff] = useState<StaffUser[]>(STAFF);
   const [roleFilter, setRoleFilter] = useState<'Tous' | UserRole>('Tous');
   const [newUserOpen, setNewUserOpen] = useState(false);
@@ -2718,7 +3244,8 @@ function UsersPage() {
   const [manageDraft, setManageDraft] = useState({ name:'', email:'', role:'Caissier' as UserRole, active:true });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const filtered = roleFilter === 'Tous' ? staff : staff.filter(u => u.role === roleFilter);
+  const q = (searchQuery || '').toLowerCase();
+  const filtered = staff.filter(u => (roleFilter === 'Tous' || u.role === roleFilter) && (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
   const submitNewUser = () => {
     if (!newUser.name.trim() || !newUser.email.trim()) return;
     const style = ROLE_STYLES[newUser.role];
@@ -2736,16 +3263,27 @@ function UsersPage() {
   };
   const deleteUser = (id: string) => { setStaff(prev => prev.filter(u => u.id !== id)); setConfirmDeleteId(null); setManageUser(null); };
 
+  const usersKpiDetails: Record<string, KpiDetail> = {
+    total: { title: 'Total utilisateurs — détails', rows: [
+      { label: 'Total', value: String(staff.length) },
+      { label: 'En ligne', value: String(staff.filter(u=>u.online).length) },
+      { label: 'Hors ligne', value: String(staff.filter(u=>!u.online).length) },
+    ]},
+    managers: { title: 'Managers — détails', rows: staff.filter(u=>u.role==='Manager').map(u => ({ label: u.name, value: u.online ? 'En ligne' : 'Hors ligne' })) },
+    caissiers: { title: 'Caissiers — détails', rows: staff.filter(u=>u.role==='Caissier').map(u => ({ label: u.name, value: u.online ? 'En ligne' : 'Hors ligne' })) },
+    magasiniers: { title: 'Magasiniers — détails', rows: staff.filter(u=>u.role==='Magasinier').map(u => ({ label: u.name, value: u.online ? 'En ligne' : 'Hors ligne' })) },
+  };
+
   return (
     <>
-      <div className="section" style={{display:'flex', gap:'10px', alignItems:'center', flexWrap:'wrap'}}>
-        <div style={{display:'flex', gap:'10px', flex:'1', minWidth:'300px', flexWrap:'wrap'}}>
-          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon blue"><Users size={22} /></div><div className="kpi-content"><div className="kpi-label">Total</div><div className="kpi-value">{staff.length}</div></div></div>
-          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon purple"><Shield size={22} /></div><div className="kpi-content"><div className="kpi-label">Managers</div><div className="kpi-value">{staff.filter(u=>u.role==='Manager').length}</div></div></div>
-          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon green"><Calculator size={22} /></div><div className="kpi-content"><div className="kpi-label">Caissiers</div><div className="kpi-value">{staff.filter(u=>u.role==='Caissier').length}</div></div></div>
-          <div className="kpi-card" style={{flex:'1'}}><div className="kpi-icon orange"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Magasiniers</div><div className="kpi-value">{staff.filter(u=>u.role==='Magasinier').length}</div></div></div>
+      <div className="section" style={{display:'flex', alignItems:'stretch', gap:'10px'}}>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'10px', flex:1}}>
+          <div className="kpi-card"><div className="kpi-icon blue"><Users size={22} /></div><div className="kpi-content"><div className="kpi-label">Total</div><div className="kpi-value">{staff.length}</div></div></div>
+          <div className="kpi-card"><div className="kpi-icon purple"><Shield size={22} /></div><div className="kpi-content"><div className="kpi-label">Managers</div><div className="kpi-value">{staff.filter(u=>u.role==='Manager').length}</div></div></div>
+          <div className="kpi-card"><div className="kpi-icon green"><Calculator size={22} /></div><div className="kpi-content"><div className="kpi-label">Caissiers</div><div className="kpi-value">{staff.filter(u=>u.role==='Caissier').length}</div></div></div>
+          <div className="kpi-card"><div className="kpi-icon orange"><Box size={22} /></div><div className="kpi-content"><div className="kpi-label">Magasiniers</div><div className="kpi-value">{staff.filter(u=>u.role==='Magasinier').length}</div></div></div>
         </div>
-        <button className="btn-primary" style={{flexShrink:0}} onClick={() => setNewUserOpen(true)}><UserPlus size={15} /> Nouvel utilisateur</button>
+        <button className="btn-primary" style={{flexShrink:0, alignSelf:'center'}} onClick={() => setNewUserOpen(true)}><UserPlus size={15} /> Nouvel utilisateur</button>
       </div>
       <div className="section card tbl-wrap">
         <div className="card-header">
@@ -2848,12 +3386,12 @@ const DEFAULT_CATEGORIES = ['Entrées','Plats Principaux','Pizzas','Burgers','Bo
 const CATEGORY_PALETTE = ['var(--blue)','#059669','#ea580c','#7c3aed','#b45309','#4f46e5','#0d9488','#be185d'];
 const emptyDish = { name:'', desc:'', price:'', category:DEFAULT_CATEGORIES[0], img:'', available:true };
 
-function MenuPage() {
+function MenuPage({ searchQuery }: { searchQuery: string }) {
   const [items, setItems] = useState<MenuItem[]>(MENU_ITEMS);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [categoryIcons, setCategoryIcons] = useState<Record<string, React.ElementType>>(CATEGORY_ICONS);
   const [activeCategory, setActiveCategory] = useState('Tous');
-  const [search, setSearch] = useState('');
+  const [availFilter, setAvailFilter] = useState<'tous' | 'actifs' | 'indisponibles'>('tous');
   const [dishModal, setDishModal] = useState<{ mode:'create'|'edit'; id?: string } | null>(null);
   const [dishForm, setDishForm] = useState(emptyDish);
   const [catModalOpen, setCatModalOpen] = useState(false);
@@ -2861,7 +3399,11 @@ function MenuPage() {
   const [selectedIconName, setSelectedIconName] = useState('Salad');
 
   const categoryColor = (cat: string) => CATEGORY_PALETTE[Math.max(categories.indexOf(cat),0) % CATEGORY_PALETTE.length];
-  const filtered = items.filter(it => (activeCategory === 'Tous' || it.category === activeCategory) && it.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items.filter(it =>
+    (activeCategory === 'Tous' || it.category === activeCategory) &&
+    (availFilter === 'tous' || (availFilter === 'actifs' && it.available) || (availFilter === 'indisponibles' && !it.available)) &&
+    it.name.toLowerCase().includes((searchQuery || '').toLowerCase())
+  );
   const toggleAvailable = (id: string) => setItems(prev => prev.map(it => it.id === id ? {...it, available:!it.available} : it));
   const openCreateDish = () => { setDishForm({...emptyDish, category:categories[0]||''}); setDishModal({mode:'create'}); };
   const openEditDish = (item: MenuItem) => { setDishForm({ name:item.name, desc:item.desc, price:String(item.price), category:item.category, img:item.img, available:item.available }); setDishModal({mode:'edit', id:item.id}); };
@@ -2902,7 +3444,6 @@ function MenuPage() {
     setCategoryIcons(prev => ({ ...prev, [name]: selectedIconComponent }));
     setNewCatName('');
     setSelectedIconName('Salad');
-    setCatModalOpen(false);
   };
 
   const removeCategory = (cat: string) => {
@@ -2915,20 +3456,41 @@ function MenuPage() {
 
   return (
     <>
-      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
-        <div className="filter-tabs">
+      {/* KPI en haut — cliquables comme filtres de disponibilité */}
+      <div className="section" style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'16px'}}>
+        <div className={`kpi-card clickable${availFilter==='tous' ? ' kpi-filter-active' : ''}`} onClick={() => setAvailFilter('tous')}>
+          <div className="kpi-icon orange"><ClipboardList size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Total plats</div><div className="kpi-value">{items.length}</div></div>
+        </div>
+        <div className={`kpi-card clickable${availFilter==='actifs' ? ' kpi-filter-active' : ''}`} onClick={() => setAvailFilter('actifs')}>
+          <div className="kpi-icon blue"><CircleCheck size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Actifs</div><div className="kpi-value">{activeCount}</div></div>
+        </div>
+        <div className={`kpi-card clickable${availFilter==='indisponibles' ? ' kpi-filter-active' : ''}`} onClick={() => setAvailFilter('indisponibles')}>
+          <div className="kpi-icon red"><AlertCircle size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Indisponibles</div><div className="kpi-value" style={{color:'var(--red)'}}>{outOfStockCount}</div></div>
+        </div>
+        <div className="kpi-card clickable" onClick={() => { setCatModalOpen(true); setNewCatName(''); setSelectedIconName('Salad'); }}>
+          <div className="kpi-icon purple"><Layers size={22} /></div>
+          <div className="kpi-content"><div className="kpi-label">Catégories</div><div className="kpi-value">{categories.length}</div></div>
+        </div>
+      </div>
+
+      {/* Filtres des plats + actions — regroupés dans un même espace, en bas des KPI */}
+      <div className="section card" style={{padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'flex-start', gap:'12px', flexWrap:'wrap', marginBottom:'20px'}}>
+        <div className="filter-tabs" style={{margin:0, flex:'1 1 auto', minWidth:0}}>
           {['Tous', ...categories].map(cat => {
             const Icon: any = cat === 'Tous' ? null : categoryIcons[cat] || Store;
             return <span key={cat} className={`filter-tab${activeCategory === cat ? ' active' : ''}`} onClick={() => setActiveCategory(cat)}>{Icon && <Icon size={14} style={{marginRight:'4px'}} />}{cat}</span>;
           })}
         </div>
-        <div style={{display:'flex', gap:'8px'}}>
-          <button className="btn-ghost" onClick={() => { setCatModalOpen(true); setNewCatName(''); setSelectedIconName('Salad'); }}><Layers size={15} /> Catégories</button>
-          <button className="btn-primary" onClick={openCreateDish}><Plus size={15} /> Nouveau plat</button>
+        <div style={{display:'flex', gap:'8px', alignItems:'center', flexShrink:0, marginLeft:'auto', whiteSpace:'nowrap'}}>
+          <button className="btn-ghost" onClick={() => { setCatModalOpen(true); setNewCatName(''); setSelectedIconName('Salad'); }}><Plus size={15} /> Ajouter une catégorie</button>
+          <button className="btn-primary" onClick={openCreateDish}><Plus size={15} /> Ajouter un plat</button>
         </div>
       </div>
-      <div className="search-wrap" style={{marginBottom:'16px'}}><Search size={15} /><input className="search-input" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'14px', marginBottom:'20px'}}>
+
+      <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'14px'}}>
         {filtered.map(item => (
           <div className="menu-card" key={item.id} style={{opacity:item.available?1:0.85}}>
             <div className="menu-card-img">
@@ -2956,10 +3518,6 @@ function MenuPage() {
           </div>
         ))}
         {filtered.length === 0 && <div style={{gridColumn:'1 / -1', textAlign:'center', color:'#000', padding:'30px 0'}}>Aucun plat</div>}
-      </div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px'}}>
-        <div className="kpi-card" style={{flexDirection:'row', alignItems:'center', gap:'14px'}}><div className="kpi-icon blue"><Layers size={22} /></div><div><div className="kpi-label">Actifs</div><div className="kpi-value" style={{fontSize:'22px'}}>{activeCount}</div></div></div>
-        <div className="kpi-card" style={{flexDirection:'row', alignItems:'center', gap:'14px'}}><div className="kpi-icon red"><AlertCircle size={22} /></div><div><div className="kpi-label">Indisponibles</div><div className="kpi-value" style={{fontSize:'22px', color:'var(--red)'}}>{outOfStockCount}</div></div></div>
       </div>
 
       {dishModal && <Modal title={dishModal.mode==='edit'?'Modifier le plat':'Nouveau plat'} subtitle={dishModal.mode==='edit'?'Mettez à jour':'Ajoutez un nouvel article'} onClose={() => setDishModal(null)} width="520px" footer={<>{dishModal.mode==='edit' && dishModal.id && <button className="btn-danger" onClick={() => deleteDish(dishModal.id as string)}><Trash2 size={14} /> Supprimer</button>}<div style={{flex:1}} /><button className="btn-ghost" onClick={() => setDishModal(null)}>Annuler</button><button className="btn-primary" onClick={submitDish}>{dishModal.mode==='edit'?'Enregistrer':'Créer'}</button></>} spreadFooter>
@@ -2994,18 +3552,48 @@ function MenuPage() {
 
       {catModalOpen && (
         <Modal
-          title="Ajouter une catégorie"
-          subtitle="Choisissez un nom et une icône"
+          title="Catégories"
+          subtitle={`${categories.length} catégorie${categories.length > 1 ? 's' : ''} existante${categories.length > 1 ? 's' : ''} · ${items.length} plat${items.length > 1 ? 's' : ''} au total`}
           onClose={() => setCatModalOpen(false)}
+          width="520px"
           footer={
             <>
-              <button className="btn-ghost" onClick={() => setCatModalOpen(false)}>Annuler</button>
-              <button className="btn-primary" onClick={addCategory}>Ajouter</button>
+              <button className="btn-ghost" onClick={() => setCatModalOpen(false)}>Fermer</button>
+              <button className="btn-primary" onClick={addCategory}><Plus size={14} /> Ajouter</button>
             </>
           }
         >
           <div className="field">
-            <label>Nom de la catégorie</label>
+            <label>Catégories existantes</label>
+            <div className="action-list">
+              {categories.map(cat => {
+                const IconComp = categoryIcons[cat] || Store;
+                const count = items.filter(it => it.category === cat).length;
+                return (
+                  <div className="action-list-item" key={cat} style={{cursor:'default'}}>
+                    <IconComp size={15} />
+                    <span style={{flex:1}}>{cat}</span>
+                    <span style={{fontSize:'14px', color:'#000'}}>{count} plat{count > 1 ? 's' : ''}</span>
+                    <button
+                      type="button"
+                      className="icon-btn danger"
+                      style={{width:'28px', height:'28px'}}
+                      title="Supprimer la catégorie"
+                      onClick={() => removeCategory(cat)}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                );
+              })}
+              {categories.length === 0 && (
+                <div style={{color:'#000', fontSize:'15px', padding:'8px 0'}}>Aucune catégorie pour le moment</div>
+              )}
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Ajouter une catégorie</label>
             <input className="input" placeholder="Ex : Sandwichs" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
           </div>
           <div className="field">
@@ -3035,43 +3623,21 @@ function MenuPage() {
 /* ============================================================================
  * AuditPage (journal des tables)
  * ==========================================================================*/
-function AuditPage({ activePeriod, periodLabel }: { activePeriod: Period; periodLabel: string }) {
+function AuditPage({ activePeriod, periodLabel, searchQuery }: { activePeriod: Period; periodLabel: string; searchQuery: string }) {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
   const [onlyMine, setOnlyMine] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
   const totalPages = 25;
 
+  const q = (searchQuery || '').toLowerCase();
   const filtered = TABLE_AUDIT_ENTRIES.filter(e => {
-    const q = search.toLowerCase();
     const matchesSearch = !q || e.action.toLowerCase().includes(q) || e.user.toLowerCase().includes(q) || e.table.toLowerCase().includes(q) || e.id.toLowerCase().includes(q);
     return matchesSearch && (!onlyMine || e.user === 'Sofiane Rahmani');
   });
 
-  const doExport = () => {
-    const rows: ExportRow[] = filtered.map(e => ({
-      'ID Audit': e.id,
-      Action: e.action,
-      Table: e.table,
-      Montant: e.montant ? `${e.montant.toLocaleString('fr-FR')} DA` : '-',
-      Utilisateur: e.user,
-      'Date & heure': e.time,
-    }));
-    const meta: ReportMeta = { title: "Journal d'audit (tables)", period: activePeriod, periodLabel };
-    runExport(exportFormat, meta, rows, `Journal_audit_tables_${toInputDate(new Date())}`);
-    setExportOpen(false);
-  };
-
   return (
     <>
-      <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'16px'}}>
-        <div><div className="page-title" style={{fontSize:'22px', fontWeight:'800', color:'#000'}}>Journal d'audit</div><div className="page-sub">{periodKindLabel(activePeriod)} · {periodLabel}</div></div>
-        <div style={{display:'flex', gap:'8px'}}>
-          <div className="search-wrap"><Search size={15} /><input className="search-input" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-          <button className={`btn-ghost`} style={onlyMine ? {borderColor:'var(--blue)', color:'var(--blue)'} : undefined} onClick={() => setOnlyMine(v => !v)}><Filter size={14} /> {onlyMine ? 'Mes actions ✓' : 'Filtrer : mes actions'}</button>
-          <button className="btn-ghost" onClick={() => setExportOpen(true)}><Download size={14} /> Exporter</button>
-        </div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'flex-end', marginBottom:'16px'}}>
+        <button className={`btn-ghost`} style={onlyMine ? {borderColor:'var(--blue)', color:'var(--blue)'} : undefined} onClick={() => setOnlyMine(v => !v)}><Filter size={14} /> {onlyMine ? 'Mes actions ✓' : 'Filtrer : mes actions'}</button>
       </div>
       <div className="section card tbl-wrap">
         <table>
@@ -3108,9 +3674,6 @@ function AuditPage({ activePeriod, periodLabel }: { activePeriod: Period; period
           <div><button className="btn-ghost" style={{padding:'5px 10px'}} disabled={page<=1} onClick={() => setPage(p=>Math.max(1,p-1))}>←</button><button className="btn-primary" style={{padding:'5px 10px'}} disabled={page>=totalPages} onClick={() => setPage(p=>Math.min(totalPages,p+1))}>→</button></div>
         </div>
       </div>
-      {exportOpen && <Modal title="Exporter" subtitle={`${filtered.length} entrées · ${periodKindLabel(activePeriod)}`} onClose={() => setExportOpen(false)} footer={<><button className="btn-ghost" onClick={() => setExportOpen(false)}>Annuler</button><button className="btn-primary" onClick={doExport}><Download size={14} /> Télécharger</button></>}>
-        <div className="field"><label>Format</label><div className="radio-row">{([{id:'csv',label:'CSV'},{id:'excel',label:'Excel'},{id:'pdf',label:'PDF'}] as const).map(opt => <div key={opt.id} className={`radio-opt${exportFormat===opt.id?' selected':''}`} onClick={() => setExportFormat(opt.id)}><input type="radio" checked={exportFormat===opt.id} readOnly /> {opt.label}</div>)}</div></div>
-      </Modal>}
     </>
   );
 }
@@ -3349,6 +3912,12 @@ function FluxPage({ activePeriod, periodLabel }: { activePeriod: Period; periodL
   const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
 
   const filteredData = typeFilter === 'Tous' ? FLUX_DATA : FLUX_DATA.filter(item => item.type === typeFilter);
+  const countEntrees = FLUX_DATA.filter(item => item.type === 'Entrée').length;
+  const countSorties = FLUX_DATA.filter(item => item.type === 'Sortie').length;
+
+  const toggleFilter = (type: 'Entrée' | 'Sortie') => {
+    setTypeFilter(prev => (prev === type ? 'Tous' : type));
+  };
 
   const doExport = () => {
     const rows: ExportRow[] = filteredData.map(item => ({
@@ -3365,16 +3934,42 @@ function FluxPage({ activePeriod, periodLabel }: { activePeriod: Period; periodL
 
   return (
     <>
-      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
-        <div><div className="page-title" style={{fontSize:'22px', fontWeight:'800', color:'#000'}}>Entrées & Sorties</div><div className="page-sub">Sorties : bons de commande stock · Entrées : tickets de caisse</div></div>
-        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
-          {(['Tous','Entrée','Sortie'] as const).map(type => (
-            <button key={type} className="btn-ghost" style={typeFilter === type ? {borderColor:'var(--blue)', color:'var(--blue)'} : {}} onClick={() => setTypeFilter(type)}>
-              {type}
-            </button>
-          ))}
-          <div style={{width:'1px', height:'20px', background:'var(--border)', margin:'0 4px'}}></div>
-          <button className="btn-ghost" onClick={() => setExportOpen(true)}><Download size={14} /> Exporter</button>
+      <div className="section" style={{display:'flex', gap:'12px', flexWrap:'wrap'}}>
+        <div
+          className="kpi-card clickable"
+          style={{flex:1, minWidth:'200px', borderColor: typeFilter === 'Tous' ? 'var(--blue)' : undefined, boxShadow: typeFilter === 'Tous' ? '0 0 0 2px var(--blue-soft), var(--shadow-card)' : undefined}}
+          onClick={() => setTypeFilter('Tous')}
+        >
+          <div className="kpi-icon blue"><History size={22} /></div>
+          <div className="kpi-content">
+            <div className="kpi-label">Toutes les opérations</div>
+            <div className="kpi-value">{FLUX_DATA.length}</div>
+            {typeFilter === 'Tous' && <div className="kpi-delta" style={{color:'var(--blue)'}}>Filtre actif</div>}
+          </div>
+        </div>
+        <div
+          className="kpi-card clickable"
+          style={{flex:1, minWidth:'200px', borderColor: typeFilter === 'Entrée' ? 'var(--green)' : undefined, boxShadow: typeFilter === 'Entrée' ? '0 0 0 2px var(--green-soft), var(--shadow-card)' : undefined}}
+          onClick={() => toggleFilter('Entrée')}
+        >
+          <div className="kpi-icon green"><ArrowDownLeft size={22} /></div>
+          <div className="kpi-content">
+            <div className="kpi-label">Total Entrées</div>
+            <div className="kpi-value">{countEntrees}</div>
+            {typeFilter === 'Entrée' && <div className="kpi-delta" style={{color:'var(--green)'}}>Filtre actif</div>}
+          </div>
+        </div>
+        <div
+          className="kpi-card clickable"
+          style={{flex:1, minWidth:'200px', borderColor: typeFilter === 'Sortie' ? 'var(--red)' : undefined, boxShadow: typeFilter === 'Sortie' ? '0 0 0 2px var(--red-soft), var(--shadow-card)' : undefined}}
+          onClick={() => toggleFilter('Sortie')}
+        >
+          <div className="kpi-icon red"><ArrowUpRight size={22} /></div>
+          <div className="kpi-content">
+            <div className="kpi-label">Total Sorties</div>
+            <div className="kpi-value">{countSorties}</div>
+            {typeFilter === 'Sortie' && <div className="kpi-delta" style={{color:'var(--red)'}}>Filtre actif</div>}
+          </div>
         </div>
       </div>
       <div className="section card tbl-wrap">
@@ -3481,6 +4076,24 @@ function buildReportRows(range: DateRange): ExportRow[] {
   return [{ "CA": `${ca.toLocaleString('fr-FR')} DA`, 'Bénéfice': `${benef.toLocaleString('fr-FR')} DA`, 'Commandes': commandes, 'Ticket moyen': `${ticketMoyen.toLocaleString('fr-FR')} DA`, 'Marge': `${marge.toFixed(1)} %`, 'Jours': days }];
 }
 
+function buildFluxReportRows(): ExportRow[] {
+  return FLUX_DATA.map((f) => ({
+    Date: f.date,
+    Type: f.type,
+    Libellé: f.libelle,
+    Montant: `${f.montant.toLocaleString('fr-FR')} DA`,
+    Source: f.source,
+  }));
+}
+
+const SEARCHABLE_PAGES: PageId[] = ['menu', 'audit', 'users', 'tables'];
+const SEARCH_PLACEHOLDERS: Partial<Record<PageId, string>> = {
+  menu: 'Rechercher un plat...',
+  audit: 'Rechercher dans le journal...',
+  users: 'Rechercher un utilisateur...',
+  tables: 'Rechercher une table...',
+};
+
 export function ManagerPage({ onBack }: { onBack?: () => void }) {
   const [activePage, setActivePage] = useState<PageId>('ca');
   const [activePeriod, setActivePeriod] = useState<Period>('jour');
@@ -3491,15 +4104,23 @@ export function ManagerPage({ onBack }: { onBack?: () => void }) {
   const logoutMutation = useLogout();
   const [notifications, setNotifications] = useState<StockAlert[]>(STOCK_ALERTS);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => { try { window.localStorage?.setItem(SIDEBAR_STORAGE_KEY, sidebarCollapsed ? '1' : '0'); } catch {} }, [sidebarCollapsed]);
 
   const dateRange = activePeriod === 'personnalise' ? getPeriodRange(activePeriod, customRange) : getPeriodRangeFromDate(activePeriod, referenceDate);
   const periodLabel = formatPeriodLabel(activePeriod, dateRange);
-  const reportRows = buildReportRows(dateRange);
+  const reportRows = activePage === 'flux' ? buildFluxReportRows() : buildReportRows(dateRange);
+  const reportTitle = activePage === 'flux' ? 'Entrées & Sorties' : PAGE_TITLES[activePage];
 
-  const showPeriodFilters = ['ca', 'commercial', 'stock', 'audit'].includes(activePage);
-  const showExportButtons = ['ca', 'commercial', 'stock'].includes(activePage);
+  const showPeriodFilters = ['ca', 'commercial', 'stock', 'audit', 'flux'].includes(activePage);
+  const showExportButtons = ['ca', 'commercial', 'stock', 'flux'].includes(activePage);
+  const showSearch = SEARCHABLE_PAGES.includes(activePage);
+
+  const handleNavigate = (page: PageId) => {
+    setActivePage(page);
+    setSearchQuery('');
+  };
 
   if (loggedOut) {
     return (
@@ -3523,7 +4144,7 @@ export function ManagerPage({ onBack }: { onBack?: () => void }) {
           onSelectPeriod={(p) => { setActivePeriod(p); if (p === 'personnalise') { /* modal ouvert via topbar */ } }}
           onApplyCustomRange={(range) => { setCustomRange(range); setActivePeriod('personnalise'); }}
           reportRows={reportRows}
-          reportTitle={PAGE_TITLES[activePage]}
+          reportTitle={reportTitle}
           showPeriodFilters={showPeriodFilters}
           showExportButtons={showExportButtons}
           referenceDate={referenceDate}
@@ -3532,19 +4153,22 @@ export function ManagerPage({ onBack }: { onBack?: () => void }) {
           notificationsOpen={notificationsOpen}
           onNotificationsOpen={() => setNotificationsOpen(true)}
           onNotificationsClose={() => setNotificationsOpen(false)}
+          searchValue={showSearch ? searchQuery : undefined}
+          onSearchChange={showSearch ? setSearchQuery : undefined}
+          searchPlaceholder={SEARCH_PLACEHOLDERS[activePage]}
         />
-        <Sidebar activePage={activePage} onNavigate={setActivePage} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} onLogout={() => { logoutMutation.mutate(); setLoggedOut(true); }} />
+        <Sidebar activePage={activePage} onNavigate={handleNavigate} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} onLogout={() => { logoutMutation.mutate(); setLoggedOut(true); }} />
         <div className="body">
           <main className="main" style={{ marginLeft: sidebarCollapsed ? 72 : 250 }}>
             {activePage === 'ca' && <RevenuePage />}
             {activePage === 'commercial' && <CommercialPage />}
             {activePage === 'stock' && <StockPage />}
             {activePage === 'restaurant' && <RestaurantSettingsPage />}
-            {activePage === 'tables' && <TablesZonesPage />}
-            {activePage === 'users' && <UsersPage />}
-            {activePage === 'menu' && <MenuPage />}
+            {activePage === 'tables' && <TablesZonesPage searchQuery={searchQuery} />}
+            {activePage === 'users' && <UsersPage searchQuery={searchQuery} />}
+            {activePage === 'menu' && <MenuPage searchQuery={searchQuery} />}
             {activePage === 'flux' && <FluxPage activePeriod={activePeriod} periodLabel={periodLabel} />}
-            {activePage === 'audit' && <AuditPage activePeriod={activePeriod} periodLabel={periodLabel} />}
+            {activePage === 'audit' && <AuditPage activePeriod={activePeriod} periodLabel={periodLabel} searchQuery={searchQuery} />}
           </main>
         </div>
       </div>

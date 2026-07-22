@@ -45,6 +45,8 @@ import {
   Home,
   ArrowRight,
   LogOut,
+  Eye,
+  Info,
 } from "lucide-react";
 
 /* ============================================================================
@@ -186,6 +188,11 @@ const CATEGORY_EMOJI: Record<string, string> = {
 function emojiForCategory(name: string) {
   return CATEGORY_EMOJI[name.trim().toLowerCase()] ?? "🍽️";
 }
+
+/** Image de secours utilisée pour un plat qui n'a pas encore de photo réelle (API),
+   afin de toujours afficher une vraie image dans les cartes du menu, jamais un emoji. */
+const FALLBACK_DISH_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=400&fit=crop&q=80";
 
 const INITIAL_TABLES: TableData[] = [
   { id: "t1", number: "T1", zone: "Salle", capacity: 2, status: "libre" },
@@ -441,12 +448,14 @@ function Modal({
   children,
   width = 520,
   icon,
+  centerTitle = false,
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   width?: number;
   icon?: React.ReactNode;
+  centerTitle?: boolean;
 }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -454,12 +463,22 @@ function Modal({
         className="bg-surface rounded-r3 shadow-modal animate-modal-in w-full max-h-[88vh] overflow-y-auto"
         style={{ maxWidth: width }}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border sticky top-0 bg-surface z-10">
-          <h2 className="text-[1.3rem] font-black flex items-center gap-2">
+        <div
+          className={`relative flex items-center px-6 py-5 border-b border-border sticky top-0 bg-surface z-10 ${
+            centerTitle ? "justify-center" : "justify-between"
+          }`}
+        >
+          <h2 className={`text-[1.3rem] font-black flex items-center gap-2 ${centerTitle ? "mx-auto" : ""}`}>
             {icon}
             {title}
           </h2>
-          <IconBtn icon={<X size={18} />} onClick={onClose} variant="ghost" />
+          {centerTitle ? (
+            <div className="absolute right-6 top-1/2 -translate-y-1/2">
+              <IconBtn icon={<X size={18} />} onClick={onClose} variant="ghost" />
+            </div>
+          ) : (
+            <IconBtn icon={<X size={18} />} onClick={onClose} variant="ghost" />
+          )}
         </div>
         <div className="p-6">{children}</div>
       </div>
@@ -498,14 +517,22 @@ function Toast({ toasts }: { toasts: { id: string; msg: string; kind: "success" 
   );
 }
 
-function Topbar({ now }: { now: Date }) {
+function Topbar({ now, filters }: { now: Date; filters?: React.ReactNode }) {
   const clock = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const dateStr = now.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
   return (
-    <div className="w-full flex items-center justify-start gap-2 px-4 py-1.5 border-b border-border bg-surface">
-      <Clock size={13} className="text-black" />
-      <span className="font-mono font-bold text-[0.82rem] text-black">{clock}</span>
-      <span className="text-[0.82rem] text-black font-semibold capitalize">{dateStr}</span>
+    <div className="w-full flex items-center gap-3 px-4 py-1.5 border-b border-border bg-surface">
+      <div className="flex items-center gap-2 shrink-0">
+        <Clock size={13} className="text-black" />
+        <span className="font-mono font-bold text-[0.82rem] text-black">{clock}</span>
+        <span className="text-[0.82rem] text-black font-semibold capitalize whitespace-nowrap">{dateStr}</span>
+      </div>
+      {filters && (
+        <>
+          <div className="w-px h-5 bg-border shrink-0" />
+          <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar">{filters}</div>
+        </>
+      )}
     </div>
   );
 }
@@ -542,6 +569,7 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
   const [toasts, setToasts] = useState<{ id: string; msg: string; kind: "success" | "error" | "info" }[]>([]);
   const [loggedOut, setLoggedOut] = useState(false);
   const [confirmArrivalTable, setConfirmArrivalTable] = useState<TableData | null>(null);
+  const [topbarFilters, setTopbarFilters] = useState<React.ReactNode>(null);
 
   /* ---- gestion des tables (déclenchée depuis la sidebar, appliquée dans le Plan de Salle) ---- */
   const [pickMode, setPickMode] = useState<"edit" | "delete" | null>(null);
@@ -558,10 +586,28 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
     }
   }, [apiTables, tablesLoadedFromApi]);
 
-  const zoneNames = useMemo(
-    () => (apiZones && apiZones.length ? apiZones.map((z: any) => z.name) : Array.from(new Set(tables.map((t) => t.zone)))),
-    [apiZones, tables]
-  );
+  const zoneNames = useMemo(() => {
+    const base =
+      apiZones && apiZones.length
+        ? apiZones.map((z: any) => z.name)
+        : Array.from(new Set(tables.map((t) => t.zone)));
+    // La Cafeteria doit toujours être proposée comme zone, même si elle n'a pas
+    // encore de table côté API.
+    return base.includes("Cafeteria") ? base : [...base, "Cafeteria"];
+  }, [apiZones, tables]);
+
+  /* ---- liste des zones utilisées par l'UI (filtres, formulaire de table, etc.) : on part des
+     vraies zones de l'API quand elles existent, mais on garantit toujours la présence de
+     "Salle", "Terrasse" et "Cafeteria" pour que ces 3 zones soient toujours proposées ensemble. */
+  const zonesForUi = useMemo(() => {
+    const base: { id: string; name: string }[] =
+      apiZones && apiZones.length
+        ? apiZones.map((z: any) => ({ id: z.id, name: z.name }))
+        : zoneNames.map((n) => ({ id: "", name: n }));
+    const names = base.map((z) => z.name);
+    const missing = ["Salle", "Terrasse", "Cafeteria"].filter((n) => !names.includes(n));
+    return missing.length ? [...base, ...missing.map((n) => ({ id: "", name: n }))] : base;
+  }, [apiZones, zoneNames]);
 
   /* ---- chargement du vrai menu (catégories + articles) depuis l'API ---- */
   useEffect(() => {
@@ -742,7 +788,7 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
         style={{ marginLeft: sidebarCollapsed ? 72 : 250 }}
         key={menuVersion}
       >
-        <Topbar now={now} />
+        <Topbar now={now} filters={topbarFilters} />
         <main className="flex-1 min-w-0 relative">
           {view === "plan" && (
             <PlanDeSalle
@@ -758,11 +804,12 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
               setCreating={setCreatingTable}
               editTable={editingTable}
               setEditTable={setEditingTable}
-              zones={apiZones && apiZones.length ? apiZones : zoneNames.map((n) => ({ id: "", name: n }))}
+              zones={zonesForUi}
               createTableMutation={createTableMutation}
               updateTableMutation={updateTableMutation}
               deleteTableMutation={deleteTableMutation}
               updateTableStatusMutation={updateTableStatusMutation}
+              setTopbarFilters={setTopbarFilters}
             />
           )}
 
@@ -809,11 +856,17 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
                 setHistory((h) => [{ ...entry, id: uid(), closedAt: Date.now() }, ...h]);
               }}
               pushToast={pushToast}
+              setTopbarFilters={setTopbarFilters}
             />
           )}
 
           {view === "pos" && !activeTableId && (
-            <MenuBrowseView tables={tables} openTable={openTable} onGoEmporter={() => setView("emporter")} />
+            <MenuBrowseView
+              tables={tables}
+              openTable={openTable}
+              onGoEmporter={() => setView("emporter")}
+              setTopbarFilters={setTopbarFilters}
+            />
           )}
 
           {view === "emporter" && (
@@ -831,6 +884,7 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
                 setTakeawayOrder({ items: [], createdAt: Date.now(), guestName: "" });
               }}
               pushToast={pushToast}
+              setTopbarFilters={setTopbarFilters}
             />
           )}
 
@@ -840,6 +894,7 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
               setReservations={setReservations}
               tables={tables}
               pushToast={pushToast}
+              setTopbarFilters={setTopbarFilters}
             />
           )}
 
@@ -848,6 +903,7 @@ export function CaissierPage({ onBack }: { onBack: () => void }) {
               history={history}
               tables={tables}
               pushToast={pushToast}
+              setTopbarFilters={setTopbarFilters}
               onReopen={(entry) => {
                 const target = tables.find((t) => t.number === entry.tableLabel);
                 if (!target) {
@@ -1275,13 +1331,32 @@ function MenuBrowseView({
   tables,
   openTable,
   onGoEmporter,
+  setTopbarFilters,
 }: {
   tables: TableData[];
   openTable: (id: string) => void;
   onGoEmporter: () => void;
+  setTopbarFilters: (n: React.ReactNode) => void;
 }) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
+
+  // barre de recherche remontée dans la Topbar globale ; les catégories restent groupées au-dessus des produits
+  useEffect(() => {
+    setTopbarFilters(
+      <div className="relative w-64 shrink-0">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un produit..."
+          className="w-full pl-8 pr-2 py-1.5 rounded-r border border-border bg-surface2 focus:bg-surface focus:border-blue outline-none text-[0.85rem] font-semibold text-black t-std"
+        />
+      </div>
+    );
+    return () => setTopbarFilters(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const products = PRODUCTS.filter(
     (p) => p.category === category && p.name.toLowerCase().includes(search.toLowerCase())
@@ -1291,33 +1366,27 @@ function MenuBrowseView({
 
   return (
     <div className="flex flex-col h-screen p-5">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="relative flex-1">
-          <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-black" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un produit..."
-            className={`${inputCls} pl-10 text-black`}
-          />
+      {/* barre des catégories — regroupée juste au-dessus de la grille de produits */}
+      <div className="flex items-center gap-2 flex-wrap mb-4 shrink-0">
+        <div className="flex items-center gap-1 bg-surface2 p-1 rounded-r2 border border-border overflow-x-auto no-scrollbar">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategory(c)}
+              className={`t-std px-3 py-2 rounded-r font-extrabold text-[0.88rem] whitespace-nowrap ${
+                category === c ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
         </div>
-        <Btn small onClick={onGoEmporter}>
-          <ShoppingBag size={15} /> Commande à emporter
-        </Btn>
-      </div>
-
-      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`t-std shrink-0 px-4 py-2.5 rounded-r2 font-extrabold text-[1rem] border ${
-              category === c ? "bg-[var(--blue-soft)] text-black border-blue shadow-glow" : "bg-surface border-border text-black hover:bg-surface3"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
+        <button
+          onClick={onGoEmporter}
+          className="t-std ml-auto shrink-0 px-3.5 py-2 rounded-r2 font-extrabold text-[0.88rem] bg-blue hover:bg-blue2 text-black flex items-center gap-1.5"
+        >
+          <ShoppingBag size={14} /> À emporter
+        </button>
       </div>
 
       <div
@@ -1331,16 +1400,12 @@ function MenuBrowseView({
             style={{ height: 260 }}
           >
             <div className="flex-1 min-h-[120px] flex items-center justify-center bg-surface3 relative overflow-hidden">
-              {p.image ? (
-                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-[3.4rem] leading-none">{p.emoji}</span>
-              )}
+              <img src={p.image || FALLBACK_DISH_IMAGE} alt={p.name} className="w-full h-full object-cover" />
             </div>
             <div className="p-3 flex flex-col gap-1 bg-surface border-t border-border text-center">
               <span className="font-extrabold text-[1.02rem] leading-tight text-black">{p.name}</span>
               {p.desc && <span className="text-[1rem] text-black font-semibold leading-tight">{p.desc}</span>}
-              <span className="font-mono font-black text-blue text-[1rem]">{fmt(p.price)}</span>
+              <span className="font-mono font-black text-blue text-[1.4rem]">{fmt(p.price)}</span>
             </div>
           </div>
         ))}
@@ -1349,22 +1414,67 @@ function MenuBrowseView({
         )}
       </div>
 
-      {freeTables.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-[1.05rem] font-extrabold uppercase text-black mb-2">Tables libres — cliquez pour commander</p>
-          <div className="flex gap-2 flex-wrap">
-            {freeTables.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => openTable(t.id)}
-                className="t-std px-4 py-2 rounded-r2 border border-green bg-[var(--green-soft)] font-extrabold text-[0.98rem] text-black hover:-translate-y-0.5"
-              >
-                {t.number} <span className="text-black font-semibold">({t.zone})</span>
-              </button>
-            ))}
+      {freeTables.length > 0 && (() => {
+        // Palette de couleurs unique par zone (bg, border, text)
+        const ZONE_PALETTE: { bg: string; border: string; text: string; badge: string }[] = [
+          { bg: '#dcfce7', border: '#16a34a', text: '#14532d', badge: '#16a34a' }, // vert — Salle
+          { bg: '#dbeafe', border: '#2563eb', text: '#1e3a8a', badge: '#2563eb' }, // bleu — Terrasse
+          { bg: '#fef3c7', border: '#d97706', text: '#78350f', badge: '#d97706' }, // ambre — Cafeteria
+          { bg: '#fce7f3', border: '#db2777', text: '#831843', badge: '#db2777' }, // rose
+          { bg: '#ede9fe', border: '#7c3aed', text: '#3b0764', badge: '#7c3aed' }, // violet
+          { bg: '#ffedd5', border: '#ea580c', text: '#7c2d12', badge: '#ea580c' }, // orange
+          { bg: '#cffafe', border: '#0891b2', text: '#164e63', badge: '#0891b2' }, // cyan
+          { bg: '#d1fae5', border: '#059669', text: '#064e3b', badge: '#059669' }, // émeraude
+        ];
+        // Construire un mapping zone → couleur stable (basé sur l'ordre d'apparition des zones)
+        const allZones = Array.from(new Set(freeTables.map((t) => t.zone)));
+        const zoneColor = (zone: string) => {
+          const idx = allZones.indexOf(zone);
+          return ZONE_PALETTE[idx % ZONE_PALETTE.length];
+        };
+        // Grouper les tables libres par zone
+        const tablesByZone = allZones.map((z) => ({
+          zone: z,
+          tables: freeTables.filter((t) => t.zone === z),
+          color: zoneColor(z),
+        }));
+
+        return (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-[1.05rem] font-extrabold uppercase text-black mb-3">
+              Tables libres — cliquez pour commander
+            </p>
+            <div className="flex flex-col gap-3">
+              {tablesByZone.map(({ zone, tables: zoneTables, color }) => (
+                <div key={zone} className="flex items-center gap-2 flex-wrap">
+                  {/* Badge de zone */}
+                  <span
+                    className="shrink-0 text-[0.78rem] font-black uppercase tracking-wide px-2.5 py-1 rounded-full"
+                    style={{ background: color.badge, color: '#fff' }}
+                  >
+                    {zone}
+                  </span>
+                  {/* Boutons de table pour cette zone */}
+                  {zoneTables.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => openTable(t.id)}
+                      className="t-std px-4 py-2 rounded-r2 font-extrabold text-[0.95rem] hover:-translate-y-0.5 transition-transform"
+                      style={{
+                        background: color.bg,
+                        border: `1.5px solid ${color.border}`,
+                        color: color.text,
+                      }}
+                    >
+                      {t.number}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -1407,6 +1517,7 @@ function PlanDeSalle({
   updateTableMutation,
   deleteTableMutation,
   updateTableStatusMutation,
+  setTopbarFilters,
 }: {
   tables: TableData[];
   setTables: React.Dispatch<React.SetStateAction<TableData[]>>;
@@ -1425,6 +1536,7 @@ function PlanDeSalle({
   updateTableMutation: ReturnType<typeof useUpdateTable>;
   deleteTableMutation: ReturnType<typeof useDeleteTable>;
   updateTableStatusMutation: ReturnType<typeof useUpdateTableStatus>;
+  setTopbarFilters: (n: React.ReactNode) => void;
 }) {
   const [zoneFilter, setZoneFilter] = useState<"Toutes" | Zone>("Toutes");
   const [statusFilter, setStatusFilter] = useState<"Tous" | TableStatus>("Tous");
@@ -1432,6 +1544,52 @@ function PlanDeSalle({
   const [transferFrom, setTransferFrom] = useState<TableData | null>(null);
   const [mergeFrom, setMergeFrom] = useState<TableData | null>(null);
   const [hoverReserved, setHoverReserved] = useState<{ tableId: string; top: number; left: number } | null>(null);
+
+  // barre de filtres unique, remontée dans la Topbar globale (une seule ligne, compacte)
+  useEffect(() => {
+    setTopbarFilters(
+      <div className="flex items-center gap-2 w-full flex-nowrap">
+        <div className="relative w-48 shrink-0">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Table (ex: T5)"
+            className="w-full pl-8 pr-2 py-1.5 rounded-r border border-border bg-surface2 focus:bg-surface focus:border-blue outline-none text-[0.85rem] font-semibold text-black t-std"
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-surface2 p-0.5 rounded-r2 border border-border shrink-0">
+          {(["Toutes", ...zones.map((z) => z.name)] as string[]).map((z) => (
+            <button
+              key={z}
+              onClick={() => setZoneFilter(z)}
+              className={`t-std px-2.5 py-1.5 rounded-r font-extrabold text-[0.8rem] whitespace-nowrap ${
+                zoneFilter === z ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
+              }`}
+            >
+              {z}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 bg-surface2 p-0.5 rounded-r2 border border-border shrink-0">
+          <ListFilter size={12} className="ml-1 text-black shrink-0" />
+          {(["Tous", "libre", "occupee", "reservee"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`t-std px-2.5 py-1.5 rounded-r font-extrabold text-[0.8rem] whitespace-nowrap ${
+                statusFilter === s ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
+              }`}
+            >
+              {s === "Tous" ? "Tous" : STATUS_LABEL[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+    return () => setTopbarFilters(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, zoneFilter, statusFilter, zones]);
 
   const showReservedPreview = (e: React.MouseEvent<HTMLDivElement>, tableId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1493,48 +1651,6 @@ function PlanDeSalle({
 
   return (
     <div className="p-6">
-      {/* barre filtres */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-black" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Recherche rapide d'une table (ex: T5)"
-            className={`${inputCls} pl-10 text-black`}
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-surface2 p-1 rounded-r2 border border-border">
-          {(["Toutes", ...zones.map((z) => z.name)] as string[]).map((z) => (
-            <button
-              key={z}
-              onClick={() => setZoneFilter(z)}
-              className={`t-std px-3.5 py-2 rounded-r font-extrabold text-[1.08rem] ${
-                zoneFilter === z ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
-              }`}
-            >
-              {z}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-surface2 p-1 rounded-r2 border border-border">
-          <ListFilter size={15} className="ml-1.5 text-black" />
-          {(["Tous", "libre", "occupee", "reservee"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`t-std px-3 py-2 rounded-r font-extrabold text-[1.05rem] ${
-                statusFilter === s ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
-              }`}
-            >
-              {s === "Tous" ? "Tous" : STATUS_LABEL[s]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {pickMode && (
         <div className="mb-4 px-4 py-3 rounded-r2 bg-[var(--orange-soft)] border border-orange/30 flex items-center justify-between">
           <span className="font-bold text-[1rem] text-orange flex items-center gap-2">
@@ -1829,6 +1945,7 @@ function POSView({
   onPay,
   pushToast,
   headerLabel,
+  setTopbarFilters,
 }: {
   table: TableData | null;
   tables: TableData[];
@@ -1839,6 +1956,7 @@ function POSView({
   onPay: (entry: Omit<HistoryEntry, "id" | "closedAt">) => void;
   pushToast: (m: string, k?: "success" | "error" | "info") => void;
   headerLabel?: string;
+  setTopbarFilters: (n: React.ReactNode) => void;
 }) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
@@ -1847,10 +1965,28 @@ function POSView({
   const [cartCollapsed, setCartCollapsed] = useState(() => localStorage.getItem("rm_cart") === "1");
   const [selectedItemUid, setSelectedItemUid] = useState<string | null>(null);
   const [activePerson, setActivePerson] = useState<number | null>(null); // null = commun
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("rm_cart", cartCollapsed ? "1" : "0");
   }, [cartCollapsed]);
+
+  // barre de recherche remontée dans la Topbar globale ; les catégories restent groupées au-dessus du menu
+  useEffect(() => {
+    setTopbarFilters(
+      <div className="relative w-64 shrink-0">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Recherche rapide d'un produit..."
+          className="w-full pl-8 pr-2 py-1.5 rounded-r border border-border bg-surface2 focus:bg-surface focus:border-blue outline-none text-[0.85rem] font-semibold text-black t-std"
+        />
+      </div>
+    );
+    return () => setTopbarFilters(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const guestCount = order.guests ?? 1;
   const setGuestCount = (n: number) => {
@@ -1907,6 +2043,8 @@ function POSView({
 
   const vider = () => {
     updateOrder((o) => ({ ...o, items: [] }));
+    setSelectedItemUid(null);
+    setConfirmClear(false);
     pushToast("Panier vidé", "info");
   };
 
@@ -1925,30 +2063,21 @@ function POSView({
     <div className="flex h-screen">
       {/* zone menu */}
       <div className="flex-1 min-w-0 flex flex-col p-5 t-std" style={{ marginRight: cartWidth }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1">
-            <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-black" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Recherche rapide d'un produit..."
-              className={`${inputCls} pl-10 text-black`}
-            />
+        {/* barre des catégories — regroupée juste au-dessus de la grille de produits */}
+        <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
+          <div className="flex items-center gap-1 bg-surface2 p-1 rounded-r2 border border-border overflow-x-auto no-scrollbar">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`t-std px-3 py-2 rounded-r font-extrabold text-[0.86rem] whitespace-nowrap ${
+                  category === c ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`t-std shrink-0 px-4 py-2.5 rounded-r2 font-extrabold text-[1rem] border ${
-                category === c ? "bg-[var(--blue-soft)] text-black border-blue shadow-glow" : "bg-surface border-border text-black hover:bg-surface3"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
         </div>
 
         <div
@@ -1963,15 +2092,11 @@ function POSView({
               style={{ height: menuCardHeight }}
             >
               <div className="flex-1 min-h-[120px] flex items-center justify-center bg-surface3 relative overflow-hidden">
-                {p.image ? (
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-[3.4rem] leading-none">{p.emoji}</span>
-                )}
+                <img src={p.image || FALLBACK_DISH_IMAGE} alt={p.name} className="w-full h-full object-cover" />
               </div>
               <div className="p-3 flex flex-col gap-1 bg-surface border-t border-border text-center">
                 <span className="font-extrabold text-[1.02rem] leading-tight text-black">{p.name}</span>
-                <span className="font-mono font-black text-blue text-[1rem]">{fmt(p.price)}</span>
+                <span className="font-mono font-black text-blue text-[1.4rem]">{fmt(p.price)}</span>
               </div>
               <span className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-blue text-white flex items-center justify-center opacity-0 group-hover:opacity-100 shadow-glow">
                 <Plus size={16} />
@@ -2019,18 +2144,25 @@ function POSView({
           </div>
         ) : (
           <>
-            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-2">
+            <div className="px-5 py-3 border-b border-border flex items-center gap-2">
               <IconBtn
                 icon={<ChevronRight size={16} />}
                 title="Réduire le panier"
                 onClick={() => setCartCollapsed(true)}
               />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-black text-[1rem] truncate text-black">{table ? `Commande ${table.number}` : headerLabel ?? "Commande à emporter"}</h3>
-                <span className="text-[1rem] font-bold text-black">
-                  {activeItems.reduce((s, i) => s + i.qty, 0)} article(s)
-                </span>
+              <div className="min-w-0 flex-1 text-center">
+                <h3 className="font-black text-[1rem] truncate text-black inline">
+                  {table ? `Commande ${table.number}` : headerLabel ?? "Commande à emporter"}
+                  <span className="font-bold text-black"> · {activeItems.reduce((s, i) => s + i.qty, 0)} article(s)</span>
+                </h3>
               </div>
+              <IconBtn
+                icon={<Trash2 size={15} />}
+                title="Vider le panier"
+                variant="danger"
+                disabled={order.items.length === 0}
+                onClick={() => setConfirmClear(true)}
+              />
             </div>
 
             {/* barre des personnes — sans sélection : rattache les prochains produits ajoutés à la personne choisie.
@@ -2065,7 +2197,7 @@ function POSView({
               )}
             </div>
 
-            {/* barre d'actions — s'applique à l'article sélectionné, plus d'icônes sur chaque plat */}
+            {/* barre d'actions — s'applique à l'article sélectionné (offrir / retourner). La suppression se fait directement sur chaque article via son icône X. */}
             <div className="px-5 py-2.5 border-b border-border flex items-center gap-2 bg-surface2">
               <span className="text-[1rem] font-bold text-black truncate flex-1">
                 {selectedItem ? `Sélectionné : ${selectedItem.name} — cliquez une personne ci-dessus pour la réassigner` : "Touchez un article pour le sélectionner"}
@@ -2083,18 +2215,6 @@ function POSView({
                   title="Retourner"
                   disabled={!selectedItem || selectedItem.returned}
                   onClick={() => selectedItem && setShowReturn(selectedItem)}
-                />
-                <IconBtn
-                  icon={<Trash2 size={14} />}
-                  title="Supprimer"
-                  variant="danger"
-                  disabled={!selectedItem}
-                  onClick={() => {
-                    if (selectedItem) {
-                      removeItem(selectedItem.uid);
-                      setSelectedItemUid(null);
-                    }
-                  }}
                 />
               </div>
             </div>
@@ -2136,6 +2256,18 @@ function POSView({
                   )}
 
                   <span className="font-mono font-black w-6 text-center text-[0.98rem] text-black shrink-0">{item.qty}</span>
+
+                  <button
+                    title="Supprimer cet article"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeItem(item.uid);
+                      if (selectedItemUid === item.uid) setSelectedItemUid(null);
+                    }}
+                    className="t-std shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-black bg-surface3 hover:bg-red hover:text-white"
+                  >
+                    <X size={13} strokeWidth={3} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -2166,6 +2298,22 @@ function POSView({
           </>
         )}
       </div>
+
+      {confirmClear && (
+        <Modal title="Vider le panier" onClose={() => setConfirmClear(false)} width={380} icon={<AlertTriangle size={18} />}>
+          <p className="text-[0.98rem] font-semibold text-black mb-5">
+            Tous les articles du panier seront supprimés. Cette action est irréversible.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Btn variant="default" onClick={() => setConfirmClear(false)}>
+              Annuler
+            </Btn>
+            <Btn variant="danger" onClick={vider}>
+              <Trash2 size={16} /> Vider
+            </Btn>
+          </div>
+        </Modal>
+      )}
 
       {showReturn && (
         <ReturnModal
@@ -2335,6 +2483,14 @@ function TransferModal({
    10. PAIEMENT — total / par personne / par plat
 ============================================================================ */
 
+/** Une "part" de l'addition — chaque part donne lieu à son propre ticket de caisse
+   lorsqu'on divise le paiement (par personne ou par plat). */
+interface SplitTicket {
+  label: string;
+  items: CartItem[];
+  total: number;
+}
+
 function SplitByPerson({
   order,
   guestCount,
@@ -2342,7 +2498,7 @@ function SplitByPerson({
 }: {
   order: Order;
   guestCount: number;
-  onValidate: () => void;
+  onValidate: (tickets: SplitTicket[]) => void;
 }) {
   const items = order.items.filter((i) => !i.returned);
   const shared = items
@@ -2381,10 +2537,34 @@ function SplitByPerson({
   const groupTotal = (g: number[]) => g.reduce((s, p) => s + personTotal(p), 0);
   const allPaid = paidGroupIdx.length >= groups.length;
 
+  const handleValidate = () => {
+    const tickets: SplitTicket[] = groups.map((g, gi) => {
+      const ownItems = items.filter((i) => i.personIndex !== undefined && g.includes(i.personIndex));
+      const sharedAmount = shared > 0 ? sharedPerPerson * g.length : 0;
+      const ticketItems: CartItem[] = [...ownItems];
+      if (sharedAmount > 0) {
+        ticketItems.push({
+          uid: `shared-${gi}`,
+          productId: "",
+          name: "Part commune (partagée)",
+          price: sharedAmount,
+          qty: 1,
+        });
+      }
+      return {
+        label: g.length > 1 ? `Personnes ${g.map((p) => p + 1).join(" + ")}` : `Personne ${g[0] + 1}`,
+        items: ticketItems,
+        total: groupTotal(g),
+      };
+    });
+    onValidate(tickets);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[0.95rem] font-semibold text-black">
         Cochez plusieurs personnes pour qu'elles paient ensemble, puis « Grouper ». Chacune peut aussi payer seule.
+        Un ticket séparé sera imprimé pour chaque groupe.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -2438,8 +2618,8 @@ function SplitByPerson({
         })}
       </div>
 
-      <Btn variant="success" full disabled={!allPaid} onClick={onValidate}>
-        <Check size={18} /> {allPaid ? "Tous les groupes ont payé — Valider" : `${paidGroupIdx.length}/${groups.length} groupe(s) payé(s)`}
+      <Btn variant="success" full disabled={!allPaid} onClick={handleValidate}>
+        <Check size={18} /> {allPaid ? "Tous les groupes ont payé — Générer les tickets" : `${paidGroupIdx.length}/${groups.length} groupe(s) payé(s)`}
       </Btn>
     </div>
   );
@@ -2460,18 +2640,15 @@ function PaymentModal({
 }) {
   const [mode, setMode] = useState<"total" | "personne" | "plat">("total");
   const [method, setMethod] = useState<PaymentMethod>("especes");
-  const [cashGiven, setCashGiven] = useState<string>("");
   const [mixedCash, setMixedCash] = useState<string>("");
   const [showTicket, setShowTicket] = useState(false);
   const [autoPrint, setAutoPrint] = useState(true);
   const [ticketNumber] = useState(() => `TCK-${Date.now().toString().slice(-6)}`);
   const [ticketDate] = useState(() => new Date());
+  const [splitTickets, setSplitTickets] = useState<SplitTicket[] | null>(null);
 
   const tableLabel = table?.number;
   const total = orderTotal(order);
-
-  const cashGivenNum = Number(cashGiven) || 0;
-  const change = Math.max(0, cashGivenNum - total);
 
   const mixedCashNum = Number(mixedCash) || 0;
   const mixedCardNum = Math.max(0, total - mixedCashNum);
@@ -2484,6 +2661,12 @@ function PaymentModal({
     carte: "Carte (TPE)",
     cib: "CIB en ligne",
     mixte: "Mixte",
+  };
+
+  const changeMode = (m: "total" | "personne" | "plat") => {
+    setMode(m);
+    setSplitTickets(null);
+    setShowTicket(false);
   };
 
   const printReceipt = () => {
@@ -2521,11 +2704,49 @@ function PaymentModal({
       <div class="r-grand"><span>TOTAL</span><span>${fmt(total)}</span></div>
       <div class="r-sep"></div>
       <div class="r-info-row"><span>Paiement</span><span style="text-transform:uppercase">${methodLabelFull[method]}</span></div>
-      ${
-        method === "especes" && cashGivenNum > 0
-          ? `<div class="r-info-row"><span>Montant reçu</span><span>${fmt(cashGivenNum)}</span></div><div class="r-info-row"><span>Monnaie rendue</span><span>${fmt(change)}</span></div>`
-          : ""
-      }
+      <div class="r-footer">
+        Merci de votre visite !<br/>
+        À très bientôt 🙏
+      </div>
+      <div class="r-barcode">▌▍▌▌▍▍▌▍▌▌▍▌▍▍▌▌▍▌</div>
+    `;
+    const w = window.open("", "_blank", "width=380,height=680");
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${html}</body></html>`);
+    w.document.close();
+    w.onload = () => w.print();
+  };
+
+  /** Imprime un ticket séparé pour UNE part de l'addition (mode par personne / par plat). */
+  const printSplitTicket = (ticket: SplitTicket) => {
+    const rows = ticket.items
+      .map(
+        (i) =>
+          `<div class="r-item"><div class="r-item-name">${i.qty}x ${i.name}</div><div class="r-item-price">${fmt(
+            i.price * i.qty
+          )}</div></div>`
+      )
+      .join("");
+    const css = `*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',monospace;font-size:13px;padding:18px;color:#111;background:#fff;max-width:340px;}.r-center{text-align:center;}.r-title{font-weight:900;font-size:1.05rem;letter-spacing:1px;}.r-sub{color:#555;font-size:.72rem;margin-top:2px;}.r-sep{border:none;border-top:1px dashed #999;margin:10px 0;}.r-info-row{display:flex;justify-content:space-between;font-size:.75rem;color:#333;line-height:1.6;}.r-item{display:flex;justify-content:space-between;font-size:.86rem;line-height:1.7;gap:8px;}.r-item-name{flex:1;}.r-item-price{font-weight:700;}.r-grand{display:flex;justify-content:space-between;font-weight:900;font-size:1.15rem;margin-top:6px;padding-top:8px;border-top:2px solid #111;}.r-grand span:last-child{color:#2563eb;}.r-footer{text-align:center;margin-top:16px;font-size:.72rem;color:#555;line-height:1.6;}.r-barcode{text-align:center;letter-spacing:2px;font-size:1.4rem;margin-top:10px;color:#111;}@media print{body{padding:6px;}}`;
+    const html = `
+      <div class="r-center">
+        <div class="r-title">🍽 RESTAUMANAGER</div>
+        <div class="r-sub">12 Rue des Frères Bencherif, Sétif</div>
+        <div class="r-sub">Tél: 036 84 00 00 · RC 00/00-0000000B00</div>
+      </div>
+      <div class="r-sep"></div>
+      <div class="r-info-row"><span>Ticket N°</span><span>${ticketNumber}-${ticket.label.replace(/\s+/g, "").slice(0, 8)}</span></div>
+      <div class="r-info-row"><span>Date</span><span>${ticketDate.toLocaleDateString("fr-FR")}</span></div>
+      <div class="r-info-row"><span>Heure</span><span>${ticketDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></div>
+      <div class="r-info-row"><span>${tableLabel ? "Table" : "Type"}</span><span>${tableLabel ? `Table ${tableLabel}` : "À emporter"}</span></div>
+      <div class="r-info-row"><span>Part</span><span>${ticket.label}</span></div>
+      <div class="r-info-row"><span>Caissier</span><span>Poste 1</span></div>
+      <div class="r-sep"></div>
+      ${rows}
+      <div class="r-sep"></div>
+      <div class="r-grand"><span>TOTAL</span><span>${fmt(ticket.total)}</span></div>
+      <div class="r-sep"></div>
+      <div class="r-info-row"><span>Paiement</span><span style="text-transform:uppercase">${methodLabelFull[method]}</span></div>
       <div class="r-footer">
         Merci de votre visite !<br/>
         À très bientôt 🙏
@@ -2541,11 +2762,43 @@ function PaymentModal({
 
   useEffect(() => {
     if (showTicket && autoPrint) {
-      printReceipt();
+      if (splitTickets && splitTickets.length) {
+        splitTickets.forEach((t) => printSplitTicket(t));
+      } else {
+        printReceipt();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTicket]);
 
+  /* ---- Cas 1 : addition divisée (par personne ou par plat) — un ticket par part ---- */
+  if (showTicket && splitTickets) {
+    return (
+      <Modal title="Tickets de l'addition divisée" onClose={onClose} width={460} icon={<Receipt size={18} />}>
+        <p className="text-[0.95rem] font-semibold text-black mb-4">
+          L'addition a été divisée : un ticket séparé a été généré pour chaque part.
+        </p>
+        <div className="flex flex-col gap-2 mb-5 max-h-[320px] overflow-y-auto pr-1">
+          {splitTickets.map((t, idx) => (
+            <div key={idx} className="flex items-center justify-between px-4 py-3 rounded-r2 border border-border bg-surface2">
+              <div>
+                <p className="font-extrabold text-[1rem] text-black">{t.label}</p>
+                <p className="font-mono font-black text-blue text-[1.05rem]">{fmt(t.total)}</p>
+              </div>
+              <Btn small onClick={() => printSplitTicket(t)}>
+                <Printer size={14} /> Réimprimer
+              </Btn>
+            </div>
+          ))}
+        </div>
+        <Btn variant="primary" full onClick={() => onConfirm(method)}>
+          <Check size={16} /> Terminer l'encaissement
+        </Btn>
+      </Modal>
+    );
+  }
+
+  /* ---- Cas 2 : addition non divisée — un seul ticket global ---- */
   if (showTicket) {
     return (
       <Modal title="Ticket de caisse" onClose={onClose} width={400} icon={<Receipt size={18} />}>
@@ -2626,18 +2879,6 @@ function PaymentModal({
               <span>Paiement</span>
               <span className="uppercase font-bold">{methodLabelFull[method]}</span>
             </div>
-            {method === "especes" && cashGivenNum > 0 && (
-              <>
-                <div className="flex justify-between">
-                  <span>Montant reçu</span>
-                  <span>{fmt(cashGivenNum)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Monnaie rendue</span>
-                  <span>{fmt(change)}</span>
-                </div>
-              </>
-            )}
           </div>
 
           <div className="text-center text-black mt-4 text-[1rem] leading-relaxed">
@@ -2658,147 +2899,230 @@ function PaymentModal({
     );
   }
 
+  const methodStyles: Record<
+    PaymentMethod,
+    { icon: React.ReactNode; bg: string; color: string }
+  > = {
+    especes: { icon: <Banknote size={22} />, bg: "#eef0fb", color: "#16a34a" },
+    carte: { icon: <CreditCard size={22} />, bg: "#dbe9fe", color: "#2563eb" },
+    cib: { icon: <Smartphone size={22} />, bg: "#d7f5e3", color: "#059669" },
+    mixte: { icon: <Layers size={22} />, bg: "#ece5fb", color: "#7c3aed" },
+  };
+
   return (
-    <Modal title="Encaissement" onClose={onClose} width={900} icon={<CreditCard size={18} />}>
-      <p className="font-mono font-black text-[1.15rem] text-blue mb-5 text-center">
-        {table ? `Table ${table.number}` : "Commande à emporter"}
-      </p>
-
-      <div className="flex gap-6 items-start">
-        {/* colonne gauche — total, remise, mode de répartition */}
-        <div className="w-[240px] shrink-0 flex flex-col gap-4">
-          <div className="px-4 py-3 rounded-r2 bg-surface3">
-            <span className="font-extrabold text-black text-[0.95rem]">Total à encaisser</span>
-            <div className="font-mono font-black text-[1.7rem] text-blue leading-tight mt-0.5">{fmt(total)}</div>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div
+        className="bg-surface rounded-r3 shadow-modal animate-modal-in w-full max-h-[92vh] flex flex-col overflow-hidden"
+        style={{ maxWidth: 1000 }}
+      >
+        {/* en-tête */}
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-border shrink-0">
+          <div className="w-11 h-11 rounded-full bg-blue flex items-center justify-center text-white shrink-0 shadow-glow">
+            <CreditCard size={20} />
           </div>
-
-          <Field label="Remise">
-            <div className="grid grid-cols-3 gap-1.5">
-              {[0, 5, 10, 15, 20].map((pct) => (
-                <button
-                  key={pct}
-                  onClick={() => onSetDiscount(pct)}
-                  className={`t-std py-2 rounded-r font-extrabold text-[0.88rem] border ${
-                    (order.discountPercent ?? 0) === pct
-                      ? "bg-[var(--orange-soft)] text-black border-orange"
-                      : "bg-surface2 border-border text-black hover:bg-surface3"
-                  }`}
-                >
-                  {pct === 0 ? "Aucune" : `-${pct}%`}
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Mode de paiement">
-            <div className="flex flex-col gap-1.5">
-              {[
-                { key: "total", label: "Paiement total" },
-                { key: "personne", label: "Par personne" },
-                { key: "plat", label: "Par plat" },
-              ].map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setMode(m.key as any)}
-                  className={`t-std text-left px-3 py-2.5 rounded-r2 font-extrabold text-[0.98rem] border ${
-                    mode === m.key ? "bg-[var(--blue-soft)] text-black border-blue" : "bg-surface2 border-border text-black hover:bg-surface3"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </Field>
+          <h2 className="text-[1.3rem] font-black text-black shrink-0">Encaissement</h2>
+          {table && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-r2 bg-[var(--blue-soft)] text-blue font-extrabold text-[0.95rem] shrink-0">
+              <Info size={15} /> Table {table.number}
+            </span>
+          )}
+          <div className="flex-1" />
+          <IconBtn icon={<X size={18} />} onClick={onClose} variant="ghost" />
         </div>
 
-        {/* colonne droite — détails du mode sélectionné */}
-        <div className="flex-1 min-w-0">
-          {mode === "total" && (
-            <div className="flex flex-col gap-4">
-              <Field label="Moyen de paiement">
-                <div className="grid grid-cols-4 gap-2">
-                  {(
-                    [
-                      { key: "especes", label: "Espèces", icon: <Banknote size={16} /> },
-                      { key: "carte", label: "Carte (TPE)", icon: <CreditCard size={16} /> },
-                      { key: "cib", label: "CIB en ligne", icon: <Smartphone size={16} /> },
-                      { key: "mixte", label: "Mixte", icon: <Layers size={16} /> },
-                    ] as { key: PaymentMethod; label: string; icon: React.ReactNode }[]
-                  ).map((m) => (
-                    <button
-                      key={m.key}
-                      onClick={() => setMethod(m.key)}
-                      className={`t-std flex flex-col items-center justify-center gap-1.5 py-3 rounded-r2 font-extrabold text-[0.86rem] border ${
-                        method === m.key ? "bg-[var(--blue-soft)] text-black border-blue shadow-glow" : "bg-surface2 border-border text-black hover:bg-surface3"
-                      }`}
-                    >
-                      {m.icon} {m.label}
-                    </button>
-                  ))}
+        {/* contenu */}
+        <div className="p-6 overflow-y-auto flex-1">
+          <div className="flex gap-6 items-start flex-wrap">
+            {/* colonne gauche — à payer / remise / mode de répartition */}
+            <div className="w-[280px] shrink-0 flex flex-col gap-4">
+              <div className="relative px-5 py-5 rounded-r3 bg-blue text-white overflow-hidden">
+                <Lock size={72} className="absolute -right-3 -bottom-3 opacity-15" />
+                <span className="font-extrabold text-[0.85rem] uppercase tracking-wide opacity-90">À payer</span>
+                <div className="font-mono font-black text-[2.3rem] leading-tight mt-1">
+                  {total.toLocaleString("fr-FR")} <span className="text-[1.2rem] align-top">DA</span>
                 </div>
-              </Field>
-
-              <div className="flex gap-4">
-                {method === "especes" && (
-                  <Field label="Montant donné par le client">
-                    <input
-                      type="number"
-                      className={`${inputCls} text-black`}
-                      value={cashGiven}
-                      onChange={(e) => setCashGiven(e.target.value)}
-                      placeholder={String(total)}
-                    />
-                    {cashGivenNum > 0 && (
-                      <p className="text-[0.98rem] font-bold text-black mt-1">Monnaie à rendre : <span className="text-blue">{fmt(change)}</span></p>
-                    )}
-                  </Field>
-                )}
-
-                {method === "mixte" && (
-                  <Field label="Répartition espèces / carte">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        className={`${inputCls} text-black`}
-                        value={mixedCash}
-                        onChange={(e) => setMixedCash(e.target.value)}
-                        placeholder="Montant en espèces"
-                      />
-                      <span className="font-bold text-black">+</span>
-                      <div className={`${inputCls} bg-surface3 text-blue font-bold`}>{fmt(mixedCardNum)} carte</div>
-                    </div>
-                  </Field>
-                )}
               </div>
 
-              <label className="flex items-center gap-2.5 px-1 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoPrint}
-                  onChange={(e) => setAutoPrint(e.target.checked)}
-                  className="w-4 h-4 accent-[var(--blue)]"
-                />
-                <span className="text-[0.95rem] font-bold text-black">Impression automatique du ticket</span>
-              </label>
+              <div className="p-4 rounded-r3 border border-border bg-surface">
+                <div className="flex items-center gap-2 mb-3">
+                  <Percent size={16} className="text-blue" />
+                  <span className="font-extrabold text-black text-[1.02rem]">Remise</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[0, 5, 10, 15, 20].map((pct) => {
+                    const active = (order.discountPercent ?? 0) === pct;
+                    return (
+                      <button
+                        key={pct}
+                        onClick={() => onSetDiscount(pct)}
+                        className={`t-std flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-r2 font-black text-[0.92rem] ${
+                          active ? "bg-blue text-white shadow-glow" : "bg-surface2 text-black hover:bg-surface3"
+                        }`}
+                      >
+                        {pct === 0 ? "0%" : `${pct}%`}
+                        {pct === 0 && (
+                          <span className={`text-[0.58rem] font-bold leading-none ${active ? "text-white/80" : "text-black/50"}`}>
+                            Aucune
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <Btn variant="success" full onClick={() => setShowTicket(true)}>
-                <Check size={18} /> Valider le paiement
-              </Btn>
+              <div className="p-4 rounded-r3 border border-border bg-surface">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={16} className="text-blue" />
+                  <span className="font-extrabold text-black text-[1.02rem]">Mode de paiement</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: "total", label: "Total" },
+                    { key: "personne", label: "Par personne" },
+                    { key: "plat", label: "Par plat" },
+                  ].map((m) => {
+                    const active = mode === m.key;
+                    return (
+                      <button
+                        key={m.key}
+                        onClick={() => changeMode(m.key as any)}
+                        className={`t-std flex flex-col items-center justify-center gap-1.5 px-1.5 py-2.5 rounded-r2 font-extrabold text-[0.78rem] leading-tight text-center border ${
+                          active ? "bg-[var(--blue-soft)] border-blue text-black" : "bg-surface border-border text-black hover:bg-surface2"
+                        }`}
+                      >
+                        <span
+                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            active ? "border-blue" : "border-border2"
+                          }`}
+                        >
+                          {active && <span className="w-2 h-2 rounded-full bg-blue" />}
+                        </span>
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          )}
 
-          {mode === "personne" && (
-            <SplitByPerson order={order} guestCount={order.guests ?? 1} onValidate={() => setShowTicket(true)} />
-          )}
+            {/* colonne droite — détails du mode sélectionné */}
+            <div className="flex-1 min-w-[300px]">
+              {mode === "total" && (
+                <div className="flex flex-col gap-4">
+                  <div className="p-4 rounded-r3 border border-border bg-surface">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CreditCard size={16} className="text-blue" />
+                      <span className="font-extrabold text-black text-[1.02rem]">Moyen de paiement</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {(["especes", "carte", "cib", "mixte"] as PaymentMethod[]).map((key) => {
+                        const active = method === key;
+                        const s = methodStyles[key];
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => setMethod(key)}
+                            className={`t-std relative flex flex-col items-center justify-center gap-2.5 py-5 rounded-r3 border-2 ${
+                              active ? "border-blue" : "border-border hover:bg-surface2"
+                            }`}
+                          >
+                            {active && (
+                              <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue text-white flex items-center justify-center">
+                                <Check size={12} strokeWidth={3} />
+                              </span>
+                            )}
+                            <span
+                              className="w-14 h-14 rounded-full flex items-center justify-center"
+                              style={{ background: s.bg, color: s.color }}
+                            >
+                              {s.icon}
+                            </span>
+                            <span className="font-extrabold text-[0.95rem] text-black">{methodLabelFull[key]}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-          {mode === "plat" && <SplitByItem order={order} onValidate={() => setShowTicket(true)} />}
+                    {method === "mixte" && (
+                      <div className="mt-4">
+                        <Field label="Répartition espèces / carte">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              className={`${inputCls} text-black`}
+                              value={mixedCash}
+                              onChange={(e) => setMixedCash(e.target.value)}
+                              placeholder="Montant en espèces"
+                            />
+                            <span className="font-bold text-black">+</span>
+                            <div className={`${inputCls} bg-surface3 text-blue font-bold`}>{fmt(mixedCardNum)} carte</div>
+                          </div>
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="p-4 rounded-r3 border border-border bg-surface flex items-center justify-between gap-3 cursor-pointer select-none">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={autoPrint}
+                        onChange={(e) => setAutoPrint(e.target.checked)}
+                        className="w-5 h-5 rounded accent-[var(--blue)]"
+                      />
+                      <span className="text-[0.98rem] font-extrabold text-black">Impression automatique du ticket</span>
+                    </div>
+                    <Printer size={18} className="text-blue shrink-0" />
+                  </label>
+                </div>
+              )}
+
+              {mode === "personne" && (
+                <div className="p-4 rounded-r3 border border-border bg-surface">
+                  <SplitByPerson
+                    order={order}
+                    guestCount={order.guests ?? 1}
+                    onValidate={(tickets) => {
+                      setSplitTickets(tickets);
+                      setShowTicket(true);
+                    }}
+                  />
+                </div>
+              )}
+
+              {mode === "plat" && (
+                <div className="p-4 rounded-r3 border border-border bg-surface">
+                  <SplitByItem
+                    order={order}
+                    onValidate={(tickets) => {
+                      setSplitTickets(tickets);
+                      setShowTicket(true);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* pied — actions */}
+        <div className="border-t border-border px-6 py-4 flex items-center gap-3 shrink-0">
+          <Btn variant="default" onClick={onClose}>
+            Annuler
+          </Btn>
+          {mode === "total" && (
+            <Btn variant="success" full onClick={() => setShowTicket(true)}>
+              <Check size={18} /> Encaisser {fmt(total)}
+            </Btn>
+          )}
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
-function SplitByItem({ order, onValidate }: { order: Order; onValidate: () => void }) {
+function SplitByItem({ order, onValidate }: { order: Order; onValidate: (tickets: SplitTicket[]) => void }) {
   const items = order.items.filter((i) => !i.returned);
   const [assign, setAssign] = useState<Record<string, number>>({});
   const [numPersons, setNumPersons] = useState(2);
@@ -2807,6 +3131,15 @@ function SplitByItem({ order, onValidate }: { order: Order; onValidate: () => vo
     items.reduce((sum, i) => (assign[i.uid] === p ? sum + (i.offered ? 0 : i.price * i.qty) : sum), 0)
   );
   const allAssigned = items.every((i) => assign[i.uid] !== undefined);
+
+  const handleValidate = () => {
+    const tickets: SplitTicket[] = Array.from({ length: numPersons }).map((_, p) => ({
+      label: `Personne ${p + 1}`,
+      items: items.filter((i) => assign[i.uid] === p),
+      total: totals[p],
+    }));
+    onValidate(tickets);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -2853,8 +3186,8 @@ function SplitByItem({ order, onValidate }: { order: Order; onValidate: () => vo
         ))}
       </div>
 
-      <Btn variant="success" full disabled={!allAssigned} onClick={onValidate}>
-        <Check size={18} /> {allAssigned ? "Valider la répartition" : "Assignez tous les plats"}
+      <Btn variant="success" full disabled={!allAssigned} onClick={handleValidate}>
+        <Check size={18} /> {allAssigned ? "Générer les tickets" : "Assignez tous les plats"}
       </Btn>
     </div>
   );
@@ -2883,11 +3216,13 @@ function ReservationsView({
   setReservations,
   tables,
   pushToast,
+  setTopbarFilters,
 }: {
   reservations: Reservation[];
   setReservations: React.Dispatch<React.SetStateAction<Reservation[]>>;
   tables: TableData[];
   pushToast: (m: string, k?: "success" | "error" | "info") => void;
+  setTopbarFilters: (n: React.ReactNode) => void;
 }) {
   const [editing, setEditing] = useState<Reservation | null>(null);
   const [creating, setCreating] = useState(false);
@@ -2898,6 +3233,52 @@ function ReservationsView({
   const [statutFilter, setStatutFilter] = useState<"toutes" | Reservation["statut"]>("toutes");
 
   const isSearching = search.trim().length > 0;
+
+  // barre de filtres unique, remontée dans la Topbar globale (une seule ligne, compacte) —
+  // le bouton "Nouvelle réservation" n'est plus ici : il est affiché en bas à droite de l'écran.
+  useEffect(() => {
+    setTopbarFilters(
+      <div className="flex items-center gap-2 w-full flex-nowrap">
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="shrink-0 px-2 py-1.5 rounded-r border border-border bg-surface2 focus:bg-surface focus:border-blue outline-none text-[0.85rem] font-semibold text-black t-std"
+        />
+        <div className="relative w-56 shrink-0">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Client, tél, table..."
+            className="w-full pl-8 pr-2 py-1.5 rounded-r border border-border bg-surface2 focus:bg-surface focus:border-blue outline-none text-[0.85rem] font-semibold text-black t-std"
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-surface2 p-0.5 rounded-r2 border border-border shrink-0">
+          {(
+            [
+              { k: "toutes", l: "Toutes" },
+              { k: "confirmee", l: "Réservées" },
+              { k: "decalee", l: "Décalées" },
+              { k: "annulee", l: "Annulées" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.k}
+              onClick={() => setStatutFilter(o.k)}
+              className={`t-std px-2.5 py-1.5 rounded-r font-extrabold text-[0.8rem] whitespace-nowrap ${
+                statutFilter === o.k ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
+              }`}
+            >
+              {o.l}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+    return () => setTopbarFilters(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFilter, search, statutFilter]);
 
   // Recherche par nom client : quand une recherche est en cours, on cherche dans TOUTES les
   // réservations (peu importe la date), pour retrouver un client sans devoir connaître sa date.
@@ -2941,76 +3322,34 @@ function ReservationsView({
 
   return (
     <div className="p-6">
-      {/* barre de filtres — organisation logique : date > recherche client > statut > action.
-         flex-wrap pour que rien ne soit jamais coupé (le bouton "Nouvelle" passe à la ligne si besoin
-         plutôt que d'être tronqué par un scroll horizontal). */}
-      <div className="flex items-center flex-wrap gap-2.5 mb-5">
-        <div className="flex items-center gap-2 shrink-0">
-          <CalendarIcon size={16} className="text-black shrink-0" />
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className={`${inputCls} w-auto text-black shrink-0`}
-          />
+      {/* en-tête : résumé du jour + bouton Nouvelle réservation, juste au-dessus du tableau */}
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          {!isSearching && (
+            <>
+              <Badge color="green">{counts.confirmee} réservée{counts.confirmee > 1 ? "s" : ""}</Badge>
+              {counts.decalee > 0 && (
+                <Badge color="orange">{counts.decalee} décalée{counts.decalee > 1 ? "s" : ""}</Badge>
+              )}
+              {counts.annulee > 0 && (
+                <Badge color="red">{counts.annulee} annulée{counts.annulee > 1 ? "s" : ""}</Badge>
+              )}
+            </>
+          )}
+          {isSearching && (
+            <p className="text-[0.95rem] font-bold text-black">
+              {dayReservations.length} résultat{dayReservations.length > 1 ? "s" : ""} pour « {search} » — toutes dates confondues
+            </p>
+          )}
         </div>
-
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-black" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un client (nom, téléphone, table)..."
-            className={`${inputCls} pl-9 text-black`}
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-surface2 p-1 rounded-r2 border border-border shrink-0 overflow-x-auto">
-          <ListFilter size={14} className="ml-1.5 text-black shrink-0" />
-          {(
-            [
-              { k: "toutes", l: "Toutes" },
-              { k: "confirmee", l: "Réservées" },
-              { k: "decalee", l: "Décalées" },
-              { k: "annulee", l: "Annulées" },
-            ] as const
-          ).map((o) => (
-            <button
-              key={o.k}
-              onClick={() => setStatutFilter(o.k)}
-              className={`t-std px-3 py-2 rounded-r font-extrabold text-[0.95rem] whitespace-nowrap shrink-0 ${
-                statutFilter === o.k ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
-              }`}
-            >
-              {o.l}
-            </button>
-          ))}
-        </div>
-
-        <Btn variant="primary" small onClick={() => setCreating(true)}>
-          <Plus size={16} className="shrink-0" />
-          <span className="whitespace-nowrap">Nouvelle réservation</span>
-        </Btn>
+        <button
+          onClick={() => setCreating(true)}
+          title="Nouvelle réservation"
+          className="t-std flex items-center gap-2 px-4 py-2.5 rounded-r2 font-extrabold text-[0.98rem] bg-blue hover:bg-blue2 text-black shadow-glow"
+        >
+          <Plus size={16} /> Nouvelle réservation
+        </button>
       </div>
-
-      {/* résumé du jour */}
-      {!isSearching && (
-        <div className="flex items-center gap-2 mb-4">
-          <Badge color="green">{counts.confirmee} réservée{counts.confirmee > 1 ? "s" : ""}</Badge>
-          {counts.decalee > 0 && (
-            <Badge color="orange">{counts.decalee} décalée{counts.decalee > 1 ? "s" : ""}</Badge>
-          )}
-          {counts.annulee > 0 && (
-            <Badge color="red">{counts.annulee} annulée{counts.annulee > 1 ? "s" : ""}</Badge>
-          )}
-        </div>
-      )}
-
-      {isSearching && (
-        <p className="text-[0.95rem] font-bold text-black mb-3">
-          {dayReservations.length} résultat{dayReservations.length > 1 ? "s" : ""} pour « {search} » — toutes dates confondues
-        </p>
-      )}
 
       {/* tableau des réservations */}
       <div className="bg-surface rounded-r2 border border-border shadow-card overflow-hidden">
@@ -3315,27 +3654,106 @@ function ReservationFormModal({
    12. HISTORIQUE
 ============================================================================ */
 
+/** Retourne la clé ISO "année-Wsemaine" (ex: 2026-W29) correspondant à une date. */
+function getISOWeekString(d: Date) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);
+  const firstThursday = date.getTime();
+  date.setUTCMonth(0, 1);
+  if (date.getUTCDay() !== 4) {
+    date.setUTCMonth(0, 1 + (((4 - date.getUTCDay()) % 7) + 7) % 7);
+  }
+  const week = 1 + Math.round((firstThursday - date.getTime()) / (7 * 24 * 3600 * 1000));
+  return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** Retourne [début, fin] (lundi 00:00 -> dimanche 23:59:59) pour une semaine ISO "yyyy-Www". */
+function getISOWeekRange(weekStr: string): [Date, Date] {
+  const [yearStr, weekPart] = weekStr.split("-W");
+  const year = Number(yearStr);
+  const week = Number(weekPart);
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay();
+  const isoStart = new Date(simple);
+  const diff = dow <= 4 ? 1 - dow : 8 - dow;
+  isoStart.setUTCDate(simple.getUTCDate() + diff);
+  isoStart.setUTCHours(0, 0, 0, 0);
+  const isoEnd = new Date(isoStart);
+  isoEnd.setUTCDate(isoStart.getUTCDate() + 6);
+  isoEnd.setUTCHours(23, 59, 59, 999);
+  return [isoStart, isoEnd];
+}
+
 function HistoriqueView({
   history,
   tables,
   pushToast,
   onReopen,
+  setTopbarFilters,
 }: {
   history: HistoryEntry[];
   tables: TableData[];
   pushToast: (m: string, k?: any) => void;
   onReopen: (entry: HistoryEntry) => void;
+  setTopbarFilters: (n: React.ReactNode) => void;
 }) {
   const [type, setType] = useState<"tous" | "sur_place" | "emporter">("tous");
   const [period, setPeriod] = useState<"jour" | "semaine" | "mois">("jour");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedWeek, setSelectedWeek] = useState(() => getISOWeekString(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+  const periodPickerRef = useRef<HTMLDivElement>(null);
+  const periodBtnGroupRef = useRef<HTMLDivElement>(null);
+  const periodPopoverRef = useRef<HTMLDivElement>(null);
+  const [periodPickerPos, setPeriodPickerPos] = useState<{ top: number; left: number } | null>(null);
+  const [viewing, setViewing] = useState<HistoryEntry | null>(null);
+  const [ticketPreview, setTicketPreview] = useState<HistoryEntry | null>(null);
 
-  const now = Date.now();
-  const cutoff = period === "jour" ? 24 * 3600 * 1000 : period === "semaine" ? 7 * 24 * 3600 * 1000 : 30 * 24 * 3600 * 1000;
+  // ferme le calendrier si on clique ailleurs (bouton ou popover flottant)
+  useEffect(() => {
+    if (!showPeriodPicker) return;
+    const handler = (e: MouseEvent) => {
+      const inGroup = periodBtnGroupRef.current && periodBtnGroupRef.current.contains(e.target as Node);
+      const inPopover = periodPopoverRef.current && periodPopoverRef.current.contains(e.target as Node);
+      if (!inGroup && !inPopover) {
+        setShowPeriodPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showPeriodPicker]);
+
+  // calcule/actualise la position du petit calendrier flottant (rendu en position fixed pour
+  // toujours passer devant les autres éléments, jamais coupé par le scroll horizontal de la topbar)
+  useEffect(() => {
+    if (!showPeriodPicker) return;
+    const reposition = () => {
+      if (periodBtnGroupRef.current) {
+        const r = periodBtnGroupRef.current.getBoundingClientRect();
+        setPeriodPickerPos({ top: r.bottom + 8, left: r.left });
+      }
+    };
+    reposition();
+    window.addEventListener("resize", reposition);
+    return () => window.removeEventListener("resize", reposition);
+  }, [showPeriodPicker]);
 
   const filtered = history
     .filter((h) => (type === "tous" ? true : h.type === type))
-    .filter((h) => now - h.closedAt <= cutoff);
+    .filter((h) => {
+      const d = new Date(h.closedAt);
+      if (period === "jour") {
+        return d.toISOString().slice(0, 10) === selectedDate;
+      }
+      if (period === "mois") {
+        return d.toISOString().slice(0, 7) === selectedMonth;
+      }
+      // semaine
+      const [start, end] = getISOWeekRange(selectedWeek);
+      return d >= start && d <= end;
+    });
 
   const totalSum = filtered.reduce((s, h) => s + h.total, 0);
 
@@ -3346,10 +3764,21 @@ function HistoriqueView({
     mixte: "Mixte",
   };
 
-  return (
-    <div className="p-6">
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="flex items-center gap-1.5 bg-surface2 p-1 rounded-r2 border border-border">
+  const periodLabel =
+    period === "jour"
+      ? new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : period === "mois"
+      ? new Date(selectedMonth + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+      : (() => {
+          const [start, end] = getISOWeekRange(selectedWeek);
+          return `${start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })} – ${end.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}`;
+        })();
+
+  // barre de filtres unique, remontée dans la Topbar globale (une seule ligne, compacte)
+  useEffect(() => {
+    setTopbarFilters(
+      <div className="flex items-center gap-2 w-full flex-nowrap">
+        <div className="flex items-center gap-1 bg-surface2 p-0.5 rounded-r2 border border-border shrink-0">
           {([
             { k: "tous", l: "Toutes" },
             { k: "sur_place", l: "Sur place" },
@@ -3358,7 +3787,7 @@ function HistoriqueView({
             <button
               key={o.k}
               onClick={() => setType(o.k)}
-              className={`t-std px-4 py-2 rounded-r font-extrabold text-[1.08rem] ${
+              className={`t-std px-2.5 py-1.5 rounded-r font-extrabold text-[0.8rem] whitespace-nowrap ${
                 type === o.k ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
               }`}
             >
@@ -3366,40 +3795,98 @@ function HistoriqueView({
             </button>
           ))}
         </div>
-
-        <div className="flex items-center gap-1.5 bg-surface2 p-1 rounded-r2 border border-border">
+        <div ref={periodBtnGroupRef} className="flex items-center gap-1 bg-surface2 p-0.5 rounded-r2 border border-border shrink-0">
           {([
-            { k: "jour", l: "Par jour" },
-            { k: "semaine", l: "Par semaine" },
-            { k: "mois", l: "Par mois" },
+            { k: "jour", l: "Jour" },
+            { k: "semaine", l: "Semaine" },
+            { k: "mois", l: "Mois" },
           ] as const).map((o) => (
             <button
               key={o.k}
-              onClick={() => setPeriod(o.k)}
-              className={`t-std px-4 py-2 rounded-r font-extrabold text-[1.08rem] ${
+              onClick={() => {
+                if (period === o.k) {
+                  setShowPeriodPicker((v) => !v);
+                } else {
+                  setPeriod(o.k);
+                  setShowPeriodPicker(true);
+                }
+              }}
+              className={`t-std px-2.5 py-1.5 rounded-r font-extrabold text-[0.8rem] whitespace-nowrap flex items-center gap-1.5 ${
                 period === o.k ? "bg-[var(--blue-soft)] text-black border border-blue" : "text-black hover:bg-surface3"
               }`}
             >
-              {o.l}
+              <CalendarIcon size={12} /> {o.l}
             </button>
           ))}
         </div>
-
-        <div className="ml-auto px-4 py-2.5 rounded-r2 bg-[var(--blue-soft)] font-extrabold text-black text-[1.02rem]">
-          {filtered.length} commande(s) — Total <span className="text-blue">{fmt(totalSum)}</span>
+        <span className="shrink-0 px-2.5 py-1.5 rounded-r2 bg-surface2 border border-border font-bold text-black text-[0.8rem] whitespace-nowrap capitalize">
+          {periodLabel}
+        </span>
+        <div className="ml-auto shrink-0 px-3 py-1.5 rounded-r2 bg-[var(--blue-soft)] font-extrabold text-black text-[0.8rem] whitespace-nowrap">
+          {filtered.length} cmd — <span className="text-blue">{fmt(totalSum)}</span>
         </div>
       </div>
+    );
+    return () => setTopbarFilters(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, period, selectedDate, selectedWeek, selectedMonth, filtered.length, totalSum, periodLabel]);
 
+  /* ---- impression d'un ticket depuis l'historique (même mise en page que le POS) ---- */
+  const printHistoryReceipt = (h: HistoryEntry) => {
+    const items = h.items.filter((i) => !i.returned);
+    const subtotal = items.reduce((s, i) => s + (i.offered ? 0 : i.price * i.qty), 0);
+    const rows = items
+      .map(
+        (i) =>
+          `<div class="r-item"><div class="r-item-name">${i.qty}x ${i.name}${
+            i.offered ? " (offert)" : ""
+          }</div><div class="r-item-price">${fmt(i.offered ? 0 : i.price * i.qty)}</div></div>`
+      )
+      .join("");
+    const closedDate = new Date(h.closedAt);
+    const ticketNumber = `TCK-${h.id.slice(-6).toUpperCase()}`;
+    const css = `*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',monospace;font-size:13px;padding:18px;color:#111;background:#fff;max-width:340px;}.r-center{text-align:center;}.r-title{font-weight:900;font-size:1.05rem;letter-spacing:1px;}.r-sub{color:#555;font-size:.72rem;margin-top:2px;}.r-sep{border:none;border-top:1px dashed #999;margin:10px 0;}.r-info-row{display:flex;justify-content:space-between;font-size:.75rem;color:#333;line-height:1.6;}.r-item{display:flex;justify-content:space-between;font-size:.86rem;line-height:1.7;gap:8px;}.r-item-name{flex:1;}.r-item-price{font-weight:700;}.r-total-row{display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;}.r-grand{display:flex;justify-content:space-between;font-weight:900;font-size:1.15rem;margin-top:6px;padding-top:8px;border-top:2px solid #111;}.r-grand span:last-child{color:#2563eb;}.r-footer{text-align:center;margin-top:16px;font-size:.72rem;color:#555;line-height:1.6;}.r-barcode{text-align:center;letter-spacing:2px;font-size:1.4rem;margin-top:10px;color:#111;}@media print{body{padding:6px;}}`;
+    const html = `
+      <div class="r-center">
+        <div class="r-title">🍽 RESTAUMANAGER</div>
+        <div class="r-sub">12 Rue des Frères Bencherif, Sétif</div>
+        <div class="r-sub">Tél: 036 84 00 00 · RC 00/00-0000000B00</div>
+      </div>
+      <div class="r-sep"></div>
+      <div class="r-info-row"><span>Ticket N°</span><span>${ticketNumber}</span></div>
+      <div class="r-info-row"><span>Date</span><span>${closedDate.toLocaleDateString("fr-FR")}</span></div>
+      <div class="r-info-row"><span>Heure</span><span>${closedDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></div>
+      <div class="r-info-row"><span>${h.type === "sur_place" ? "Table" : "Type"}</span><span>${h.type === "sur_place" ? `Table ${h.tableLabel ?? "—"}` : "À emporter"}</span></div>
+      <div class="r-info-row"><span>Caissier</span><span>Poste 1</span></div>
+      <div class="r-sep"></div>
+      ${rows}
+      <div class="r-sep"></div>
+      <div class="r-grand"><span>TOTAL</span><span>${fmt(h.total)}</span></div>
+      <div class="r-sep"></div>
+      <div class="r-info-row"><span>Paiement</span><span style="text-transform:uppercase">${methodLabel[h.method]}</span></div>
+      <div class="r-footer">
+        Merci de votre visite !<br/>
+        À très bientôt 🙏
+      </div>
+      <div class="r-barcode">▌▍▌▌▍▍▌▍▌▌▍▌▍▍▌▌▍▌</div>
+    `;
+    const w = window.open("", "_blank", "width=380,height=680");
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${html}</body></html>`);
+    w.document.close();
+    w.onload = () => w.print();
+    pushToast("Ticket réimprimé");
+  };
+
+  return (
+    <div className="p-6">
       <div className="flex flex-col gap-2.5">
         {filtered.length === 0 && (
           <div className="text-center py-16 text-black font-bold">Aucune commande sur cette période.</div>
         )}
         {filtered.map((h) => (
           <div key={h.id} className="bg-surface rounded-r2 border border-border shadow-card overflow-hidden">
-            <button
-              onClick={() => setExpanded(expanded === h.id ? null : h.id)}
-              className="w-full flex items-center gap-4 px-4 py-3.5"
-            >
+            <div className="w-full flex items-center gap-4 px-4 py-3.5">
               <div className={`w-9 h-9 rounded-r2 flex items-center justify-center shrink-0 ${h.type === "sur_place" ? "bg-[var(--blue-soft)] text-blue" : "bg-[var(--orange-soft)] text-orange"}`}>
                 {h.type === "sur_place" ? <UtensilsCrossed size={16} /> : <PackageCheck size={16} />}
               </div>
@@ -3412,33 +3899,187 @@ function HistoriqueView({
                 </p>
               </div>
               <span className="font-mono font-black text-[1rem] text-blue">{fmt(h.total)}</span>
-              <ChevronDown size={16} className={`t-std text-black ${expanded === h.id ? "rotate-180" : ""}`} />
-            </button>
-            {expanded === h.id && (
-              <div className="px-4 pb-4 border-t border-border pt-3 flex flex-col gap-1.5">
-                {h.items.map((i) => (
-                  <div key={i.uid} className="flex justify-between text-[0.98rem] font-semibold text-black">
-                    <span>
-                      {i.qty}x {i.name}
-                    </span>
-                    <span className="font-mono text-blue font-bold">{fmt(i.price * i.qty)}</span>
-                  </div>
-                ))}
-                <div className="pt-2 flex gap-2">
-                  {h.type === "sur_place" && (
-                    <Btn small variant="warning" onClick={() => onReopen(h)}>
-                      <span style={{ fontSize: 14, lineHeight: 1 }}>↩</span> Réouvrir la commande
-                    </Btn>
-                  )}
-                  <Btn small variant="default" onClick={() => pushToast("Ticket réimprimé")}>
-                    <Printer size={14} /> Réimprimer le ticket
-                  </Btn>
-                </div>
+
+              {/* actions directement visibles sur la carte : voir la commande / aperçu + impression du ticket */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <IconBtn
+                  icon={<Eye size={15} />}
+                  title="Voir la commande"
+                  onClick={() => setViewing(h)}
+                />
+                <IconBtn
+                  icon={<span style={{ fontSize: 14, lineHeight: 1 }}>🖨️</span>}
+                  title="Aperçu du ticket"
+                  onClick={() => setTicketPreview(h)}
+                />
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
+
+      {/* petite fenêtre flottante du calendrier — position fixed calculée depuis le groupe de
+         boutons Jour/Semaine/Mois, s'affiche devant tout (jamais coupée par la topbar) */}
+      {showPeriodPicker && periodPickerPos && (
+        <div
+          ref={periodPopoverRef}
+          style={{ position: "fixed", top: periodPickerPos.top, left: periodPickerPos.left }}
+          className="z-[200] bg-surface border border-border rounded-r2 shadow-modal p-3"
+        >
+          {period === "jour" && (
+            <input
+              type="date"
+              autoFocus
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setShowPeriodPicker(false);
+              }}
+              className={`${inputCls} text-black`}
+            />
+          )}
+          {period === "semaine" && (
+            <input
+              type="week"
+              autoFocus
+              value={selectedWeek}
+              onChange={(e) => {
+                setSelectedWeek(e.target.value);
+                setShowPeriodPicker(false);
+              }}
+              className={`${inputCls} text-black`}
+            />
+          )}
+          {period === "mois" && (
+            <input
+              type="month"
+              autoFocus
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setShowPeriodPicker(false);
+              }}
+              className={`${inputCls} text-black`}
+            />
+          )}
+        </div>
+      )}
+
+      {viewing && (
+        <Modal
+          title={viewing.type === "sur_place" ? `Table ${viewing.tableLabel ?? "—"}` : "Commande à emporter"}
+          onClose={() => setViewing(null)}
+          width={420}
+          icon={<Eye size={18} />}
+        >
+          <div className="flex flex-col gap-1.5 mb-4">
+            {viewing.items.map((i) => (
+              <div key={i.uid} className="flex justify-between text-[0.98rem] font-semibold text-black">
+                <span>
+                  {i.qty}x {i.name}
+                </span>
+                <span className="font-mono text-blue font-bold">{fmt(i.price * i.qty)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <span className="font-extrabold text-black text-[1.05rem]">Total</span>
+            <span className="font-mono font-black text-[1.2rem] text-blue">{fmt(viewing.total)}</span>
+          </div>
+        </Modal>
+      )}
+
+      {/* aperçu du ticket avant impression — permet de simplement consulter ou d'imprimer */}
+      {ticketPreview && (() => {
+        const items = ticketPreview.items.filter((i) => !i.returned);
+        const subtotal = items.reduce((s, i) => s + (i.offered ? 0 : i.price * i.qty), 0);
+        const closedDate = new Date(ticketPreview.closedAt);
+        const ticketNumber = `TCK-${ticketPreview.id.slice(-6).toUpperCase()}`;
+        return (
+          <Modal title="Aperçu du ticket" onClose={() => setTicketPreview(null)} width={400} icon={<Receipt size={18} />}>
+            <div className="font-mono text-[0.95rem] bg-surface2 rounded-r2 p-5 border border-dashed border-border2 mb-4">
+              <div className="text-center mb-1">
+                <div className="font-black text-[1.05rem] text-black tracking-wide">🍽 RESTAUMANAGER</div>
+                <div className="text-black text-[1.08rem] mt-0.5">12 Rue des Frères Bencherif, Sétif</div>
+                <div className="text-black text-[1.08rem]">Tél: 036 84 00 00</div>
+              </div>
+
+              <div className="border-t border-dashed border-border2 my-3" />
+
+              <div className="flex flex-col gap-1 text-[1rem] text-black">
+                <div className="flex justify-between">
+                  <span>Ticket N°</span>
+                  <span className="font-bold text-black">{ticketNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Date</span>
+                  <span className="font-bold text-black">{closedDate.toLocaleDateString("fr-FR")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Heure</span>
+                  <span className="font-bold text-black">
+                    {closedDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{ticketPreview.type === "sur_place" ? "Table" : "Type"}</span>
+                  <span className="font-bold text-black">
+                    {ticketPreview.type === "sur_place" ? `Table ${ticketPreview.tableLabel ?? "—"}` : "À emporter"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Caissier</span>
+                  <span className="font-bold text-black">Poste 1</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-border2 my-3" />
+
+              <div className="flex flex-col gap-1">
+                {items.map((i) => (
+                  <div key={i.uid} className="flex justify-between py-0.5 text-black">
+                    <span>
+                      {i.qty}x {i.name}
+                      {i.offered ? " (offert)" : ""}
+                    </span>
+                    <span className="font-mono text-blue font-bold">{fmt(i.offered ? 0 : i.price * i.qty)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-dashed border-border2 my-3" />
+
+              <div className="flex justify-between font-black text-[1.1rem] mt-1 pt-2 border-t-2 border-black text-black">
+                <span>TOTAL</span>
+                <span className="text-blue">{fmt(ticketPreview.total)}</span>
+              </div>
+
+              <div className="border-t border-dashed border-border2 my-3" />
+
+              <div className="flex flex-col gap-1 text-[1.05rem] text-black">
+                <div className="flex justify-between">
+                  <span>Paiement</span>
+                  <span className="uppercase font-bold">{methodLabel[ticketPreview.method]}</span>
+                </div>
+              </div>
+
+              <div className="text-center text-black mt-4 text-[1rem] leading-relaxed">
+                Merci de votre visite !
+                <br />
+                À très bientôt 🙏
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Btn variant="default" onClick={() => setTicketPreview(null)}>
+                <Eye size={16} /> Juste consulter
+              </Btn>
+              <Btn variant="primary" onClick={() => printHistoryReceipt(ticketPreview)}>
+                <Printer size={16} /> Imprimer
+              </Btn>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

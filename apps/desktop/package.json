@@ -1,7 +1,7 @@
 {
   "name": "@restaurant/desktop",
   "version": "1.0.0",
-  "description": "Restaurant Manager — Application Desktop",
+  "description": "Restaurant Manager - Application Desktop",
   "main": "dist-electron/main/main.js",
   "scripts": {
     "dev": "tsc -p tsconfig.electron.json && electron .",
@@ -21,26 +21,14 @@
       "dist-electron/**/*"
     ],
     "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "Restaurant Manager",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "build/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "build/icon.png"
     }
   },
   "dependencies": {
